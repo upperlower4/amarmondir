@@ -4,6 +4,7 @@ import { TempleCard } from '@/components/TempleCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Sidebar, Search } from 'lucide-react';
+import { safeJsonStringify } from '@/lib/utils';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';

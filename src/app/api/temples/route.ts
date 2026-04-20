@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { safeJsonStringify } from '@/lib/utils';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {

@@ -3,6 +3,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TempleCard } from '@/components/TempleCard';
+import { safeJsonStringify } from '@/lib/utils';
 import { Search, MapPin, Sparkles, Navigation, Users } from 'lucide-react';
 import Link from 'next/link';
 import { DIVISIONS } from '@/lib/constants';

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Loader2, ShieldCheck, AlertCircle, FilePenLine } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { safeJsonStringify } from '@/lib/utils';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
