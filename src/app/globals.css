@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-bengali: 'Noto Sans Bengali', sans-serif;
+
+  --color-primary: #f97316; /* Orange 500 */
+  --color-primary-dark: #ea580c; /* Orange 600 */
+}
+
+@layer base {
+  body {
+    @apply bg-[#fcfaf7] text-gray-900;
+  }
+}
+
+.bengali-text {
+  font-family: var(--font-bengali);
+}
+
+.glass-card {
+  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl;
+}
