@@ -23,32 +23,44 @@ import { getDivisionColor } from '@/lib/utils';
 import Link from 'next/link';
 import { TempleActions } from '@/components/temple/TempleActions';
 
-async function getTempleData(slug: string) {
-  const { data: temple } = await supabase
-    .from('temples')
-    .select('*, profiles(username, avatar_url)')
-    .eq('slug', slug)
-    .eq('status', 'approved')
-    .single();
+async function getTempleData(rawSlug: string) {
+  const slug = decodeURIComponent(rawSlug || '').trim();
+
+  let temple: any = null;
+  const templeQueries = [
+    () => supabase.from('temples').select('*').eq('slug', slug).eq('status', 'approved').maybeSingle(),
+    () => supabase.from('temples').select('*').ilike('slug', slug).eq('status', 'approved').maybeSingle(),
+    () => supabase.from('temples').select('*').eq('slug', slug).maybeSingle(),
+  ];
+
+  for (const run of templeQueries) {
+    const { data } = await run();
+    if (data) {
+      temple = data;
+      break;
+    }
+  }
 
   if (!temple) return null;
 
-  const { data: photos } = await supabase
-    .from('temple_photos')
-    .select('*')
-    .eq('temple_id', temple.id);
+  const [{ data: creatorProfile }, { data: photos }, { data: contributors }, { data: festivals }] = await Promise.all([
+    temple.created_by
+      ? supabase.from('profiles').select('username, avatar_url').eq('id', temple.created_by).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from('temple_photos').select('*').eq('temple_id', temple.id),
+    supabase.from('temple_contributors').select('*, profiles(username, full_name, avatar_url, badge)').eq('temple_id', temple.id),
+    supabase.from('temple_festivals').select('*').eq('temple_id', temple.id),
+  ]);
 
-  const { data: contributors } = await supabase
-    .from('temple_contributors')
-    .select('*, profiles(username, full_name, avatar_url, badge)')
-    .eq('temple_id', temple.id);
-
-  const { data: festivals } = await supabase
-    .from('temple_festivals')
-    .select('*')
-    .eq('temple_id', temple.id);
-
-  return { temple, photos, contributors, festivals };
+  return {
+    temple: {
+      ...temple,
+      profiles: creatorProfile || null,
+    },
+    photos: (photos || []).filter((photo: any) => !photo.status || photo.status === 'approved'),
+    contributors: contributors || [],
+    festivals: festivals || [],
+  };
 }
 
 function renderArticleContent(article?: string | null) {
