@@ -58,10 +58,10 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {user ? (
             <>
-              <Button asChild size="sm" className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
-                <Link href="/add-temple">
-                  <Plus className="h-4 w-4" />
-                  নতুন মন্দির
+              <Button asChild size="sm" className="hidden sm:flex items-center gap-1.5 px-3 bg-orange-500 hover:bg-orange-600 whitespace-nowrap">
+                <Link href="/add-temple" className="flex items-center gap-1.5">
+                  <Plus className="h-4 w-4 shrink-0" />
+                  <span>নতুন মন্দির</span>
                 </Link>
               </Button>
 
@@ -124,7 +124,7 @@ export function Navbar() {
               {/* Mobile Profile Drawer */}
               <div className="md:hidden">
                 <Sheet>
-                  <SheetTrigger className={cn(buttonVariants({ variant: 'ghost' }), "relative h-10 w-10 rounded-full p-0")}>
+                  <SheetTrigger className={cn(buttonVariants({ variant: 'ghost' }), "relative h-10 w-10 rounded-full p-0 flex items-center justify-center")}>
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={profile?.avatar_url || ''} />
                       <AvatarFallback className="bg-orange-100 text-orange-600">

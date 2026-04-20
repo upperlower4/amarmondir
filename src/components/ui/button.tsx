@@ -44,8 +44,9 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  asChild,
   ...props
-}: Omit<ButtonPrimitive.Props, 'asChild'> & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
