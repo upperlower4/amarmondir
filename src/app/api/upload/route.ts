@@ -36,9 +36,9 @@ const UPLOAD_CONFIG = {
     height: 160,
     crop: 'fill',
     gravity: 'face',
-    minKB: 8,
-    maxKB: 12,
-    quality: 58,
+    minKB: 5,
+    maxKB: 10,
+    quality: 50,
   },
 } as const;
 

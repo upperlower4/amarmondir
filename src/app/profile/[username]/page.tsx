@@ -10,6 +10,8 @@ import { notFound } from 'next/navigation';
 import { TempleCard } from '@/components/TempleCard';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 async function getProfileData(username: string) {
   const { data: profile } = await supabase
     .from('profiles')

@@ -7,6 +7,8 @@ import { Trophy, Medal, MapPin, Edit3, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 async function getLeaders() {
   const { data } = await supabase
     .from('profiles')
