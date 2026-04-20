@@ -49,7 +49,7 @@ export async function POST(req: Request) {
           photo_type: 'gallery'
         }))
       );
-      if (photoError) console.error('Photo insert error', photoError);
+      if (photoError) console.error('Photo insert error', String(photoError?.message || photoError));
     }
 
     // 3. Add Contributor Credit
@@ -58,11 +58,11 @@ export async function POST(req: Request) {
       profile_id: user.id,
       contribution_type: 'original'
     });
-    if (contributorError) console.error('Contributor insert error', contributorError);
+    if (contributorError) console.error('Contributor insert error', String(contributorError?.message || contributorError));
 
     return NextResponse.json({ success: true, temple });
   } catch (err: any) {
-    console.error('Temple API Error:', err);
+    console.error('Temple API Error:', String(err?.message || err));
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

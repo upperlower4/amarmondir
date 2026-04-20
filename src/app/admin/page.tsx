@@ -157,6 +157,7 @@ export default function AdminPage() {
                         src={temple.cover_image || 'https://picsum.photos/seed/temple/500/500'}
                         alt={temple.title || 'Temple'}
                         fill
+                        sizes="(max-width: 1280px) 100vw, 30vw"
                         className="object-cover"
                         referrerPolicy="no-referrer"
                       />

@@ -52,12 +52,12 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {user ? (
             <>
-              <Link href="/add-temple" className="hidden sm:block">
-                <Button size="sm" className="items-center gap-2 bg-orange-500 hover:bg-orange-600">
+              <Button asChild size="sm" className="hidden sm:flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
+                <Link href="/add-temple">
                   <Plus className="h-4 w-4" />
                   নতুন মন্দির
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               <div className="md:hidden">
                 <DropdownMenu>
@@ -138,12 +138,12 @@ export function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" size="sm">লগ ইন</Button>
-              </Link>
-              <Link href="/signup" className="hidden sm:block">
-                <Button size="sm" className="bg-orange-500 hover:bg-orange-600">জয়েন করুন</Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                <Link href="/login">লগ ইন</Link>
+              </Button>
+              <Button asChild size="sm" className="hidden sm:inline-flex bg-orange-500 hover:bg-orange-600">
+                <Link href="/signup">জয়েন করুন</Link>
+              </Button>
 
               <div className="md:hidden flex items-center gap-2">
                 <DropdownMenu>

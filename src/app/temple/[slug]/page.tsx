@@ -76,43 +76,47 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
     <>
       <Navbar />
       <main className="flex-1 bg-[#fcfaf7]">
-        <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
-          <Image
-            src={temple.cover_image || 'https://picsum.photos/seed/temple/1920/1080'}
-            alt={temple.title}
-            fill
-            priority
-            className="object-cover"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="container mx-auto px-4 md:px-8 mt-6 md:mt-10">
+          <div className="relative aspect-video w-full rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl shadow-orange-100/50 border border-orange-50 bg-gray-100">
+            <Image
+              src={temple.cover_image || 'https://picsum.photos/seed/temple/1920/1080'}
+              alt={temple.title}
+              fill
+              sizes="100vw"
+              priority
+              className="object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
 
-          <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
-            <div className="container mx-auto">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Badge className={getDivisionColor(temple.division)}>{temple.division}</Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-none backdrop-blur-md">
-                  {temple.temple_type}
-                </Badge>
-              </div>
+          <div className="py-10 md:py-14 border-b border-orange-100">
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <Badge className={`${getDivisionColor(temple.division)} text-sm px-4 py-1.5`}>{temple.division}</Badge>
+              <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 text-sm px-4 py-1.5">
+                {temple.temple_type}
+              </Badge>
+            </div>
 
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 font-serif">{temple.title}</h1>
-              <p className="text-xl text-white/80 italic font-light tracking-wide md:text-2xl mb-6">
-                {temple.english_name}
-              </p>
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-3 font-serif leading-tight">{temple.title}</h1>
+            <p className="text-xl text-gray-500 italic md:text-2xl mb-8 tracking-wide">
+              {temple.english_name}
+            </p>
 
-              <div className="flex flex-wrap items-center gap-6 text-white/90 text-sm md:text-base mb-8">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-orange-400" />
-                  <span>{temple.address}</span>
+            <div className="flex flex-wrap items-center gap-6 text-gray-600 text-sm md:text-base bg-white p-5 rounded-2xl w-fit shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-xl">
+                  <MapPin className="h-5 w-5 text-orange-600" />
                 </div>
-                {temple.open_hours && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-orange-400" />
-                    <span>{temple.open_hours}</span>
-                  </div>
-                )}
+                <span>{temple.address}</span>
               </div>
+              {temple.open_hours && (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-50 rounded-xl">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <span>{temple.open_hours}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -120,42 +124,32 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-12">
-              <section>
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 font-serif">
-                  <Sparkles className="h-6 w-6 text-orange-500" />
-                  ছবি গ্যালারি
-                </h2>
+              {(photos?.length ?? 0) > 0 && (
+                <section>
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 font-serif">
+                    <Sparkles className="h-6 w-6 text-orange-500" />
+                    ছবি গ্যালারি
+                  </h2>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {(photos?.length ?? 0) > 0 ? (
-                    photos?.map((photo: any) => (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {photos?.map((photo: any) => (
                       <div
                         key={photo.id}
-                        className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all"
+                        className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all border border-gray-100"
                       >
                         <Image
                           src={photo.url}
                           alt="Temple Photo"
                           fill
+                          sizes="(max-width: 768px) 50vw, 33vw"
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                    ))
-                  ) : (
-                    Array(3)
-                      .fill(0)
-                      .map((_, i) => (
-                        <div
-                          key={i}
-                          className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200"
-                        >
-                          <Sparkles className="h-8 w-8 text-gray-300" />
-                        </div>
-                      ))
-                  )}
-                </div>
-              </section>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className="bg-white p-8 rounded-[2rem] shadow-sm border">
                 <Tabs defaultValue="about" className="w-full">
@@ -191,6 +185,16 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                           </Button>
                         </div>
                       )}
+                      
+                      <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 bg-orange-50 rounded-3xl border border-orange-100">
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-1 text-xl">আপনার তোলা ছবি আছে?</h4>
+                          <p className="text-gray-600 text-sm bengali-text">মন্দিরের যেকোনো নতুন ছবি বা গ্যালারি আপডেট করতে পারেন।</p>
+                        </div>
+                        <Button className="mt-4 md:mt-0 bg-white hover:bg-gray-50 text-orange-600 border border-orange-200 rounded-xl h-12 px-8 flex items-center gap-2 font-bold shadow-sm">
+                           <Edit2 className="h-4 w-4" /> ছবি আপলোড করুন
+                        </Button>
+                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>

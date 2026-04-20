@@ -151,11 +151,11 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-16 text-center">
-              <Link href="/add-temple">
-                <Button size="lg" className="bg-white text-orange-600 hover:bg-orange-50 text-xl h-16 px-12 rounded-2xl shadow-xl">
+              <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 text-xl h-16 px-12 rounded-2xl shadow-xl">
+                <Link href="/add-temple">
                   মন্দির যোগ করুন
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         </section>

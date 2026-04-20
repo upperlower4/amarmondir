@@ -408,7 +408,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   <div className="relative aspect-[21/9] w-full bg-orange-50 rounded-2xl border-2 border-dashed border-orange-200 flex items-center justify-center overflow-hidden">
                     {coverImage ? (
                       <>
-                        <Image src={coverImage} alt="Cover Preview" fill className="object-cover" />
+                        <Image src={coverImage} alt="Cover Preview" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                         <Button 
                           type="button" 
                           variant="destructive" 
@@ -435,7 +435,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {galleryImages.map((img, idx) => (
                       <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-md">
-                        <Image src={img} alt={`Gallery ${idx}`} fill className="object-cover" />
+                        <Image src={img} alt={`Gallery ${idx}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
                         <Button 
                           type="button" 
                           variant="destructive" 
