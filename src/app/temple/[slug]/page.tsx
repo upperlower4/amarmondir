@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { getDivisionColor } from '@/lib/utils';
 import Link from 'next/link';
+import { TempleActions } from '@/components/temple/TempleActions';
 
 async function getTempleData(slug: string) {
   const { data: temple } = await supabase
@@ -135,16 +136,20 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                     {photos?.map((photo: any) => (
                       <div
                         key={photo.id}
-                        className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all border border-gray-100"
+                        className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all border border-gray-100 bg-white"
                       >
                         <Image
                           src={photo.url}
-                          alt="Temple Photo"
+                          alt={photo.caption || 'Temple Photo'}
                           fill
                           sizes="(max-width: 768px) 50vw, 33vw"
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
+                        {(photo.caption || photo.credit_name) && <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white text-xs">
+                          {photo.caption && <p className="font-medium line-clamp-2">{photo.caption}</p>}
+                          {photo.credit_name && <p className="text-white/80">© {photo.credit_name}</p>}
+                        </div>}
                       </div>
                     ))}
                   </div>
@@ -186,14 +191,14 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                         </div>
                       )}
                       
-                      <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 bg-orange-50 rounded-3xl border border-orange-100">
+                      <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 bg-orange-50 rounded-3xl border border-orange-100 gap-4">
                         <div>
                           <h4 className="font-bold text-gray-900 mb-1 text-xl">আপনার তোলা ছবি আছে?</h4>
-                          <p className="text-gray-600 text-sm bengali-text">মন্দিরের যেকোনো নতুন ছবি বা গ্যালারি আপডেট করতে পারেন।</p>
+                          <p className="text-gray-600 text-sm bengali-text">মন্দিরের নতুন ছবি, cover request, caption বা credit যোগ করতে পারেন।</p>
                         </div>
-                        <Button className="mt-4 md:mt-0 bg-white hover:bg-gray-50 text-orange-600 border border-orange-200 rounded-xl h-12 px-8 flex items-center gap-2 font-bold shadow-sm">
-                           <Edit2 className="h-4 w-4" /> ছবি আপলোড করুন
-                        </Button>
+                        <div className="w-full md:w-auto">
+                          <TempleActions templeId={temple.id} defaultValues={temple} />
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
@@ -279,12 +284,7 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                       </Button>
                     )}
 
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 flex items-center gap-2"
-                    >
-                      <Edit2 className="h-4 w-4" /> তথ্য আপডেট করুন
-                    </Button>
+                    <TempleActions templeId={temple.id} defaultValues={temple} />
                   </div>
                 </CardContent>
               </Card>
