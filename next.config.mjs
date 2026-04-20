@@ -12,6 +12,8 @@ const nextConfig = {
         hostname: 'picsum.photos',
       },
     ],
+    minimumCacheTTL: 604800, // 7 days in seconds
+    dangerouslyAllowSVG: true,
   },
 };
 

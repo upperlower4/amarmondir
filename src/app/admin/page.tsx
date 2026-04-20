@@ -77,7 +77,7 @@ export default function AdminPage() {
       toast.success(status === 'approved' ? 'মন্দির এপ্রুভ করা হয়েছে' : 'মন্দির রিজেক্ট করা হয়েছে');
       setPendingTemples((prev) => prev.filter((t) => t.id !== id));
     } catch (error: any) {
-      console.error('Moderation error:', String(error?.message || error));
+      console.error('Moderation error:', safeJsonStringify(error));
       toast.error('অপারেশন ব্যর্থ হয়েছে', {
         description: String(error?.message || 'Unknown error').slice(0, 500),
       });

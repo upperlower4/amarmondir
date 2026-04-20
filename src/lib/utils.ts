@@ -38,13 +38,20 @@ export function getDivisionColor(division: string): string {
 export function safeJsonStringify(obj: any): string {
   const cache = new WeakSet();
   return JSON.stringify(obj, (key, value) => {
+    // Basic circular check (ignore property names)
     if (typeof value === 'object' && value !== null) {
-      // Basic circular check
       if (cache.has(value)) {
         return '[Circular]';
       }
       cache.add(value);
+    }
 
+    // Always ignore react-internal props
+    if (typeof key === 'string' && (key.startsWith('__reactFiber') || key.startsWith('__reactProps') || key.startsWith('__reactInternalInstance'))) {
+      return '[React Internal]';
+    }
+
+    if (typeof value === 'object' && value !== null) {
       // Handle DOM Elements
       if (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) {
         return `[HTMLElement: ${value.tagName}]`;
@@ -53,14 +60,14 @@ export function safeJsonStringify(obj: any): string {
         return `[DOM Node: ${value.nodeName}]`;
       }
 
-      // Handle React Internals
+      // Handle Fiber Nodes
       if (value.constructor?.name === 'FiberNode' || value._reactInternalFiber || value._reactEvents) {
         return '[Fiber Node]';
       }
       
-      // Handle known internal circular properties
-      if (typeof key === 'string' && (key.startsWith('__reactFiber') || key.startsWith('__reactProps'))) {
-        return '[React Internal]';
+      // Handle known circular structures if they appear as values
+      if (value.stateNode && (value.stateNode instanceof HTMLElement || value.stateNode.tagName)) {
+        return '[Fiber Node with DOM]';
       }
     }
     return value;

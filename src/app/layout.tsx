@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="bn">
-      <body className="min-h-screen flex flex-col font-sans bg-white text-gray-900">
+      <body className="min-h-screen flex flex-col font-sans bg-white text-gray-900 overflow-x-hidden">
         <Toaster position="top-center" />
         {children}
       </body>

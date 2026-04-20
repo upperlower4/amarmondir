@@ -18,12 +18,12 @@ async function getFeaturedTemples() {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error fetching featured temples:', String(error.message));
+      console.error('Error fetching featured temples:', safeJsonStringify(error));
       return [];
     }
     return data || [];
   } catch (err) {
-    console.error('Fetch error:', String(err instanceof Error ? err.message : err));
+    console.error('Fetch error:', safeJsonStringify(err));
     return [];
   }
 }
@@ -121,27 +121,27 @@ export default async function HomePage() {
         <section className="py-20 bg-orange-500 text-white overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-20 bg-white -translate-y-10 rounded-[100%]" />
           <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold font-serif mb-4">আমাদের সাথে যুক্ত হোন</h2>
-              <p className="text-orange-50 opacity-90 text-lg bengali-text">মাত্র ৩টি ধাপে যুক্ত করুন আপনার এলাকার মন্দির</p>
+            <div className="text-center mb-4">
+              <h2 className="text-2xl md:text-4xl font-bold font-serif mb-2">আমাদের সাথে যুক্ত হোন</h2>
+              <p className="text-orange-50 opacity-90 text-sm md:text-lg bengali-text">মাত্র ৩টি ধাপে যুক্ত করুন আপনার এলাকার মন্দির</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-              <div className="flex flex-col items-center text-center gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
                   ১
                 </div>
                 <h3 className="text-xl font-bold font-serif">বেসিক তথ্য দিন</h3>
                 <p className="text-orange-50/80 bengali-text">মন্দিরের নাম, ধরন এবং অবস্থান নির্দিষ্ট করুন।</p>
               </div>
-              <div className="flex flex-col items-center text-center gap-4">
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
                   ২
                 </div>
                 <h3 className="text-xl font-bold font-serif">ছবি আপলোড করুন</h3>
                 <p className="text-orange-50/80 bengali-text">মন্দিরের সুন্দর ছবি এবং ম্যাপ লোকেশন যুক্ত করুন।</p>
               </div>
-              <div className="flex flex-col items-center text-center gap-4">
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
                   ৩
                 </div>
@@ -150,7 +150,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="mt-16 text-center">
+            <div className="mt-4 text-center">
               <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 text-xl h-16 px-12 rounded-2xl shadow-xl">
                 <Link href="/add-temple">
                   মন্দির যোগ করুন

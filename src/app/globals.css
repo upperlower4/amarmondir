@@ -21,6 +21,12 @@
   body {
     @apply bg-[#fcfaf7] text-gray-900 antialiased;
     font-family: var(--font-sans);
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+  }
+
+  body::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari, Opera */
   }
 
   h1,

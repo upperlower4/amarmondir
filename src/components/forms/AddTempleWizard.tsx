@@ -115,7 +115,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
         setGalleryImages((prev) => [...prev, ...nextImages].slice(0, 8));
       }
     } catch (err: any) {
-      console.error('Image read error:', String(err?.message || err));
+      console.error('Image read error:', safeJsonStringify(err));
       toast.error('ছবি প্রসেস করা যায়নি');
     } finally {
       e.target.value = '';
@@ -242,7 +242,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       });
       router.push('/directory');
     } catch (error: any) {
-      console.error('Form submission error:', String(error?.message || error));
+      console.error('Form submission error:', safeJsonStringify(error));
       const errorMessage = typeof error === 'string' ? error : error?.message || 'সাবমিশন ব্যর্থ হয়েছে';
       toast.error('সাবমিশন ব্যর্থ হয়েছে', { description: String(errorMessage).slice(0, 500) });
     } finally {

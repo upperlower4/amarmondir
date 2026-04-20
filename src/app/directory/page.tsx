@@ -78,7 +78,7 @@ async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
 
     return data || [];
   } catch (error) {
-    console.error('Error fetching temples:', String(error instanceof Error ? error.message : error));
+    console.error('Error fetching temples:', safeJsonStringify(error));
     return [];
   }
 }
@@ -95,7 +95,8 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row gap-8">
             <aside className="w-full md:w-64 space-y-8 bg-white p-5 md:p-6 rounded-2xl border h-fit shrink-0 md:overflow-y-auto md:max-h-[calc(100vh-8rem)] md:sticky md:top-24">
-              <div>
+              {/* Desktop Filters */}
+              <div className="hidden md:block">
                 <h3 className="font-bold mb-4 flex items-center gap-2">
                   <Sidebar className="h-4 w-4 text-orange-500" />
                   ফিল্টার
@@ -189,6 +190,105 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                   </div>
                 </div>
               </div>
+
+              {/* Mobile Filters */}
+              <details className="md:hidden group" open={false}>
+                <summary className="font-bold mb-4 flex items-center justify-between cursor-pointer p-2 bg-orange-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Sidebar className="h-4 w-4 text-orange-500" />
+                    ফিল্টার অপশন
+                  </div>
+                  <span className="text-orange-500 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                
+                <div className="space-y-6 pt-2">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">বিভাগ</h4>
+                    <div className="space-y-2">
+                      <Link
+                        href={buildDirectoryHref(params, { division: '', district: '' })}
+                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.division ? 'text-orange-600 font-bold' : ''}`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.division ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                          {!params.division && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        </div>
+                        সব বিভাগ
+                      </Link>
+
+                      {DIVISIONS.map((div) => (
+                        <Link
+                          key={div}
+                          href={buildDirectoryHref(params, { division: div, district: '' })}
+                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.division === div ? 'text-orange-600 font-bold' : ''}`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.division === div ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                            {params.division === div && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </div>
+                          {div}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {params.division && selectedDivisionDistricts.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">জেলা</h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        <Link
+                          href={buildDirectoryHref(params, { district: '' })}
+                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.district ? 'text-orange-600 font-bold' : ''}`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                            {!params.district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </div>
+                          সব জেলা
+                        </Link>
+
+                        {selectedDivisionDistricts.map((district) => (
+                          <Link
+                            key={district}
+                            href={buildDirectoryHref(params, { district })}
+                            className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.district === district ? 'text-orange-600 font-bold' : ''}`}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.district === district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                              {params.district === district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                            </div>
+                            <span className="break-anywhere">{district}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">মন্দিরের ধরন</h4>
+                    <div className="space-y-2">
+                      <Link
+                        href={buildDirectoryHref(params, { type: '' })}
+                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.type ? 'text-orange-600 font-bold' : ''}`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                          {!params.type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        </div>
+                        সব ধরন
+                      </Link>
+
+                      {TEMPLE_TYPES.map((type) => (
+                        <Link
+                          key={type}
+                          href={buildDirectoryHref(params, { type })}
+                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.type === type ? 'text-orange-600 font-bold' : ''}`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.type === type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                            {params.type === type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </div>
+                          <span className="break-anywhere">{type}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </details>
             </aside>
 
             <div className="flex-1">
