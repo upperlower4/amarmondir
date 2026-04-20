@@ -65,9 +65,15 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       district: '',
       upazila: '',
       temple_type: '',
+      deity: '',
+      established_year: '',
+      open_hours: '',
       short_bio: '',
       address: '',
       map_link: '',
+      latitude: '',
+      longitude: '',
+      article_content: '',
     },
   });
 
@@ -208,37 +214,28 @@ export function AddTempleWizard({ userId }: { userId: string }) {
         longitude: values.longitude ? parseFloat(String(values.longitude)) : null,
       };
 
-      const { data: temple, error: templeError } = await supabase
-        .from('temples')
-        .insert({
-          ...cleanValues,
+      // Call the API route for secure insert bypassing RLS
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      const res = await fetch('/api/temples', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: safeJsonStringify({
+          cleanValues,
           slug: String(slug),
-          cover_image: urls.cover ? String(urls.cover) : null,
-          created_by: String(userId),
-          status: 'pending' // Moderation
-        })
-        .select()
-        .single();
-
-      if (templeError) throw templeError;
-
-      // 2. Insert Gallery Photos
-      if (urls.gallery.length > 0) {
-        await supabase.from('temple_photos').insert(
-          urls.gallery.map(url => ({
-            temple_id: temple.id,
-            url,
-            photo_type: 'gallery'
-          }))
-        );
-      }
-
-      // 3. Add Contributor Credit
-      await supabase.from('temple_contributors').insert({
-        temple_id: temple.id,
-        profile_id: userId,
-        contribution_type: 'original'
+          urls,
+        }),
       });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || 'Submission failed');
+      }
 
       toast.success('মন্দির সফলভাবে সাবমিট হয়েছে!', {
         description: 'অ্যাডমিন ভেরিফিকেশনের পর এটি লাইভ হবে।'
@@ -315,7 +312,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                             field.onChange(value);
                             form.setValue('district', '');
                           }}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="সিলেক্ট করুন" /></SelectTrigger>
@@ -334,7 +331,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>জেলা</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedDivision}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDivision}>
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="জেলা" /></SelectTrigger>
                           </FormControl>
@@ -366,7 +363,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>মন্দিরের ধরন</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="সিলেক্ট করুন" /></SelectTrigger>
                           </FormControl>

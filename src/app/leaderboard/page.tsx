@@ -10,12 +10,37 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 async function getLeaders() {
-  const { data } = await supabase
+  const { data: profiles } = await supabase
     .from('profiles')
-    .select('*')
-    .order('temples_added', { ascending: false })
-    .limit(50);
-  return data || [];
+    .select('id, username, full_name, avatar_url, badge, temples_added, edits_made');
+
+  if (!profiles) return [];
+
+  const { data: contributors } = await supabase
+    .from('temple_contributors')
+    .select('profile_id, contribution_type');
+
+  const { data: edits } = await supabase
+    .from('temple_edits')
+    .select('profile_id');
+
+  const formattedProfiles = profiles.map(profile => {
+    const dynamicTemplesAdded = contributors?.filter(c => c.profile_id === profile.id && c.contribution_type === 'original').length || 0;
+    const dynamicEditsMade = edits?.filter(e => e.profile_id === profile.id).length || 0;
+    
+    return {
+      ...profile,
+      temples_added: Math.max(profile.temples_added || 0, dynamicTemplesAdded),
+      edits_made: Math.max(profile.edits_made || 0, dynamicEditsMade)
+    };
+  });
+
+  return formattedProfiles
+    .sort((a, b) => {
+      if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
+      return b.edits_made - a.edits_made;
+    })
+    .slice(0, 50);
 }
 
 export default async function LeaderboardPage() {

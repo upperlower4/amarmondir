@@ -26,16 +26,45 @@ async function getProfileData(username: string) {
     .select('*, temples(*)')
     .eq('profile_id', profile.id);
 
-  const { data: leaders } = await supabase
+  // Dynamically count contributions instead of relying only on the trigger to update profile.temples_added
+  const templeCount = contributedTemples?.filter(c => c.contribution_type === 'original').length || 0;
+  
+  const { count: editCount } = await supabase
+    .from('temple_edits')
+    .select('*', { count: 'exact', head: true })
+    .eq('profile_id', profile.id);
+
+  const { data: profiles } = await supabase
     .from('profiles')
     .select('id, username, temples_added, edits_made')
-    .order('temples_added', { ascending: false })
-    .order('edits_made', { ascending: false })
     .order('created_at', { ascending: true });
 
-  const leaderboardRank = (leaders || []).findIndex((leader) => leader.id === profile.id) + 1;
+  const { data: allContributors } = await supabase.from('temple_contributors').select('profile_id, contribution_type');
+  const { data: allEdits } = await supabase.from('temple_edits').select('profile_id');
 
-  return { profile, contributedTemples, leaderboardRank: leaderboardRank || null };
+  const formattedProfiles = (profiles || []).map(p => {
+    const pTemples = allContributors?.filter(c => c.profile_id === p.id && c.contribution_type === 'original').length || 0;
+    const pEdits = allEdits?.filter(e => e.profile_id === p.id).length || 0;
+    return {
+      ...p,
+      temples_added: Math.max(p.temples_added || 0, pTemples),
+      edits_made: Math.max(p.edits_made || 0, pEdits)
+    };
+  }).sort((a, b) => {
+    if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
+    return b.edits_made - a.edits_made;
+  });
+
+  const leaderboardRank = formattedProfiles.findIndex((leader) => leader.id === profile.id) + 1;
+
+  // Use dynamic counts for the profile display
+  const dynamicProfile = {
+    ...profile,
+    temples_added: Math.max(profile.temples_added, templeCount), // Show higher of trigger or dynamic count
+    edits_made: Math.max(profile.edits_made, editCount || 0)
+  };
+
+  return { profile: dynamicProfile, contributedTemples, leaderboardRank: leaderboardRank || null };
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
