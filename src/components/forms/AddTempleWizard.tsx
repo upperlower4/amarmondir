@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,6 +36,19 @@ const formSchema = z.object({
   article_content: z.string().optional(),
 });
 
+const MAX_COVER_SIZE_MB = 6;
+const MAX_GALLERY_SIZE_MB = 6;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AddTempleWizard({ userId }: { userId: string }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -60,22 +73,46 @@ export function AddTempleWizard({ userId }: { userId: string }) {
 
   const selectedDivision = form.watch('division');
 
+  useEffect(() => {
+    form.setValue('district', '');
+  }, [selectedDivision, form]);
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'gallery') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    for (let i = 0; i < files.length; i++) {
+    const maxSizeMb = type === 'cover' ? MAX_COVER_SIZE_MB : MAX_GALLERY_SIZE_MB;
+
+    try {
+      const nextImages: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64 = reader.result as string;
-            if (type === 'cover') {
-                setCoverImage(base64);
-            } else {
-                setGalleryImages(prev => [...prev, base64]);
-            }
-        };
-        reader.readAsDataURL(file);
+
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          toast.error('শুধু JPG, PNG, WEBP ছবি আপলোড করা যাবে');
+          continue;
+        }
+
+        if (file.size > maxSizeMb * 1024 * 1024) {
+          toast.error(`ছবির সাইজ সর্বোচ্চ ${maxSizeMb}MB হতে হবে`);
+          continue;
+        }
+
+        const base64 = await fileToBase64(file);
+        nextImages.push(base64);
+      }
+
+      if (type === 'cover') {
+        setCoverImage(nextImages[0] || null);
+      } else if (nextImages.length > 0) {
+        setGalleryImages((prev) => [...prev, ...nextImages].slice(0, 8));
+      }
+    } catch (err: any) {
+      console.error('Image read error:', String(err?.message || err));
+      toast.error('ছবি প্রসেস করা যায়নি');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -84,38 +121,47 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   };
 
   const uploadImages = async () => {
-    const uploadedUrls: { cover?: string, gallery: string[] } = { gallery: [] };
- 
-    if (coverImage && typeof coverImage === 'string') {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: safeJsonStringify({ image: coverImage, folder: CLOUDINARY_FOLDERS.COVERS, type: 'cover' }),
-        });
-        const data = await res.json();
-        if (data.url) uploadedUrls.cover = data.url;
-      } catch (err: any) {
-        console.error('Failed to upload cover image:', String(err?.message || err));
-      }
+    const uploadedUrls: { cover?: string; gallery: string[] } = { gallery: [] };
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      throw new Error('আপনাকে আবার লগইন করতে হবে');
     }
- 
+
+    const uploadSingle = async (image: string, folder: string, type: 'cover' | 'gallery' | 'avatar') => {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: safeJsonStringify({ image, folder, type }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Upload failed');
+      }
+
+      return data.url as string;
+    };
+
+    if (coverImage && typeof coverImage === 'string') {
+      uploadedUrls.cover = await uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover');
+    }
+
     for (const img of galleryImages) {
       if (typeof img === 'string') {
-        try {
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: safeJsonStringify({ image: img, folder: CLOUDINARY_FOLDERS.GALLERY, type: 'gallery' }),
-          });
-          const data = await res.json();
-          if (data.url) uploadedUrls.gallery.push(data.url);
-        } catch (err: any) {
-          console.error('Failed to upload gallery image:', String(err?.message || err));
-        }
+        const url = await uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery');
+        uploadedUrls.gallery.push(url);
       }
     }
- 
+
     return uploadedUrls;
   };
 
@@ -141,7 +187,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     setLoading(true);
     try {
       const urls = await uploadImages();
-      const slug = `${generateSlug(values.english_name)}-${Math.floor(Math.random() * 1000)}`;
+      const slug = `${generateSlug(values.english_name)}-${crypto.randomUUID().slice(0, 8)}`;
 
       // 1. Insert Temple
       const cleanValues = {
@@ -264,7 +310,13 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>বিভাগ</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('district', '');
+                          }}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="সিলেক্ট করুন" /></SelectTrigger>
                           </FormControl>

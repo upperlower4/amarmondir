@@ -5,18 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  MapPin, 
-  Clock, 
-  Map as MapIcon, 
-  History, 
-  Users, 
+import {
+  MapPin,
+  Clock,
+  Map as MapIcon,
+  History,
+  Users,
   AlertCircle,
   Calendar,
   Sparkles,
   Edit2,
-  ExternalLink,
-  CheckCircle2
+  CheckCircle2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
@@ -28,6 +27,7 @@ async function getTempleData(slug: string) {
     .from('temples')
     .select('*, profiles(username, avatar_url)')
     .eq('slug', slug)
+    .eq('status', 'approved')
     .single();
 
   if (!temple) return null;
@@ -50,9 +50,24 @@ async function getTempleData(slug: string) {
   return { temple, photos, contributors, festivals };
 }
 
+function renderArticleContent(article?: string | null) {
+  if (!article) return null;
+
+  return article
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph, index) => (
+      <p key={index} className="mb-4 whitespace-pre-line">
+        {paragraph}
+      </p>
+    ));
+}
+
 export default async function TemplePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const data = await getTempleData(slug);
+
   if (!data) notFound();
 
   const { temple, photos, contributors, festivals } = data;
@@ -61,7 +76,6 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
     <>
       <Navbar />
       <main className="flex-1 bg-[#fcfaf7]">
-        {/* Hero Banner */}
         <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
           <Image
             src={temple.cover_image || 'https://picsum.photos/seed/temple/1920/1080'}
@@ -72,20 +86,17 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          
+
           <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
             <div className="container mx-auto">
               <div className="flex flex-wrap gap-2 mb-4">
-                <Badge className={getDivisionColor(temple.division)}>
-                  {temple.division}
-                </Badge>
+                <Badge className={getDivisionColor(temple.division)}>{temple.division}</Badge>
                 <Badge variant="secondary" className="bg-white/20 text-white border-none backdrop-blur-md">
                   {temple.temple_type}
                 </Badge>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 font-serif">
-                {temple.title}
-              </h1>
+
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 font-serif">{temple.title}</h1>
               <p className="text-xl text-white/80 italic font-light tracking-wide md:text-2xl mb-6">
                 {temple.english_name}
               </p>
@@ -108,20 +119,20 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
 
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            
-            {/* Left Column: Content */}
             <div className="lg:col-span-2 space-y-12">
-              
-              {/* Gallery Grid */}
               <section>
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 font-serif">
                   <Sparkles className="h-6 w-6 text-orange-500" />
                   ছবি গ্যালারি
                 </h2>
+
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {(photos?.length ?? 0) > 0 ? (
                     photos?.map((photo: any) => (
-                      <div key={photo.id} className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all">
+                      <div
+                        key={photo.id}
+                        className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-orange-100 transition-all"
+                      >
                         <Image
                           src={photo.url}
                           alt="Temple Photo"
@@ -132,22 +143,31 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                       </div>
                     ))
                   ) : (
-                    Array(3).fill(0).map((_, i) => (
-                      <div key={i} className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200">
-                        <Sparkles className="h-8 w-8 text-gray-300" />
-                      </div>
-                    ))
+                    Array(3)
+                      .fill(0)
+                      .map((_, i) => (
+                        <div
+                          key={i}
+                          className="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200"
+                        >
+                          <Sparkles className="h-8 w-8 text-gray-300" />
+                        </div>
+                      ))
                   )}
                 </div>
               </section>
 
-              {/* Bio & Long Form Article */}
               <section className="bg-white p-8 rounded-[2rem] shadow-sm border">
                 <Tabs defaultValue="about" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-8 bg-orange-50/50 p-1 h-14 rounded-xl">
-                    <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">সংক্ষিপ্ত বর্ণনা</TabsTrigger>
-                    <TabsTrigger value="article" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">বিস্তারিত খবর/ইতিহাস</TabsTrigger>
+                    <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                      সংক্ষিপ্ত বর্ণনা
+                    </TabsTrigger>
+                    <TabsTrigger value="article" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                      বিস্তারিত খবর/ইতিহাস
+                    </TabsTrigger>
                   </TabsList>
+
                   <TabsContent value="about" className="mt-0">
                     <div className="prose prose-orange max-w-none bengali-text leading-relaxed text-lg text-gray-700">
                       {temple.short_bio ? (
@@ -157,10 +177,11 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                       )}
                     </div>
                   </TabsContent>
+
                   <TabsContent value="article" className="mt-0">
                     <div className="prose prose-orange max-w-none bengali-text leading-loose text-lg text-gray-700">
                       {temple.article_content ? (
-                        <div dangerouslySetInnerHTML={{ __html: temple.article_content.replace(/\n/g, '<br />') }} />
+                        <div>{renderArticleContent(temple.article_content)}</div>
                       ) : (
                         <div className="text-center py-12">
                           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -175,13 +196,13 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                 </Tabs>
               </section>
 
-              {/* Festivals */}
               {festivals && festivals.length > 0 && (
                 <section>
                   <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 font-serif">
                     <Calendar className="h-6 w-6 text-orange-500" />
                     মূল উৎসবসমূহ
                   </h2>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {festivals.map((fest: any) => (
                       <Card key={fest.id} className="border-none shadow-sm bg-white">
@@ -199,14 +220,12 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
               )}
             </div>
 
-            {/* Right Column: Sidebar */}
             <div className="space-y-8">
-              
-              {/* Quick Info Card */}
               <Card className="rounded-3xl border-none shadow-xl shadow-orange-100/50">
                 <CardHeader className="bg-orange-500 text-white rounded-t-3xl pt-8 pb-6">
                   <CardTitle className="text-xl font-serif">মৌলিক তথ্য</CardTitle>
                 </CardHeader>
+
                 <CardContent className="space-y-6 pt-8">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
@@ -217,6 +236,7 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                       <p className="font-semibold">{temple.deity || 'তথ্য নেই'}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <History className="h-5 w-5 text-orange-500" />
@@ -226,30 +246,45 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                       <p className="font-semibold">{temple.established_year || 'অজানা'}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <MapIcon className="h-5 w-5 text-orange-500" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">অবস্থান</p>
-                      <p className="font-semibold">{temple.upazila}, {temple.district}</p>
+                      <p className="font-semibold">
+                        {temple.upazila}, {temple.district}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="pt-4 space-y-3">
-                    <Button className="w-full bg-orange-500 h-12 rounded-xl text-lg flex items-center gap-2" asChild>
-                      <a href={temple.map_link} target="_blank" rel="noopener noreferrer">
-                        <MapIcon className="h-5 w-5" /> গুগল ম্যাপে দেখুন
-                      </a>
-                    </Button>
-                    <Button variant="outline" className="w-full h-12 rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 flex items-center gap-2">
+                    {temple.map_link ? (
+                      <Button className="w-full bg-orange-500 h-12 rounded-xl text-lg flex items-center gap-2" asChild>
+                        <a href={temple.map_link} target="_blank" rel="noopener noreferrer">
+                          <MapIcon className="h-5 w-5" /> গুগল ম্যাপে দেখুন
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled
+                        className="w-full h-12 rounded-xl text-lg flex items-center gap-2 opacity-60"
+                      >
+                        <MapIcon className="h-5 w-5" /> ম্যাপ লিংক নেই
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 flex items-center gap-2"
+                    >
                       <Edit2 className="h-4 w-4" /> তথ্য আপডেট করুন
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Contributors */}
               <Card className="rounded-3xl border-none shadow-sm bg-white">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2 font-serif">
@@ -257,10 +292,15 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                     অবদানকারী
                   </CardTitle>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                   {(contributors?.length ?? 0) > 0 ? (
                     contributors?.map((cont: any) => (
-                      <Link key={cont.id} href={`/profile/${cont.profiles.username}`} className="flex items-center gap-3 p-2 hover:bg-orange-50 rounded-xl transition-colors group">
+                      <Link
+                        key={cont.id}
+                        href={`/profile/${cont.profiles.username}`}
+                        className="flex items-center gap-3 p-2 hover:bg-orange-50 rounded-xl transition-colors group"
+                      >
                         <div className="relative">
                           <Image
                             src={cont.profiles.avatar_url || 'https://picsum.photos/seed/user/100/100'}
@@ -271,12 +311,14 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                             referrerPolicy="no-referrer"
                           />
                         </div>
+
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold truncate group-hover:text-orange-600">
                             {cont.profiles.full_name || cont.profiles.username}
                           </p>
                           <p className="text-[10px] text-gray-400 bengali-text">{cont.profiles.badge}</p>
                         </div>
+
                         <Badge variant="ghost" className="text-[9px] bg-orange-100 text-orange-700">
                           {cont.contribution_type === 'original' ? 'মূল' : 'আপডেট'}
                         </Badge>
@@ -288,7 +330,6 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                 </CardContent>
               </Card>
 
-              {/* Verified Status */}
               {temple.status === 'approved' && (
                 <div className="bg-green-50 border border-green-100 p-6 rounded-[2rem] flex items-center gap-4">
                   <div className="w-12 h-12 bg-green-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-green-100">
@@ -296,12 +337,13 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                   </div>
                   <div>
                     <p className="font-bold text-green-800">ভেরিফাইড তথ্য</p>
-                    <p className="text-xs text-green-700 bengali-text">এই মন্দিরের তথ্য আমাদের প্যানেল দ্বারা যাচাইকৃত।</p>
+                    <p className="text-xs text-green-700 bengali-text">
+                      এই মন্দিরের তথ্য আমাদের প্যানেল দ্বারা যাচাইকৃত।
+                    </p>
                   </div>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </main>

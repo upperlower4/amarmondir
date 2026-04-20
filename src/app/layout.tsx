@@ -1,12 +1,6 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display, Noto_Sans_Bengali, Geist } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-serif' });
-const notoBengali = Noto_Sans_Bengali({ subsets: ['bengali'], variable: '--font-bengali' });
 
 export const metadata: Metadata = {
   title: 'amarmondir | Bangladesh Temple Directory',
@@ -19,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" className={cn(playfair.variable, notoBengali.variable, "font-sans", geist.variable)}>
-      <body className="min-h-screen flex flex-col font-sans">
+    <html lang="bn" className="font-sans">
+      <body className="min-h-screen flex flex-col font-sans bg-white text-gray-900">
         <Toaster position="top-center" />
         {children}
       </body>
