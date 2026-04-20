@@ -53,7 +53,7 @@ function getApproxBytesFromDataUrl(dataUrl: string) {
 }
 
 function buildTransformation(type: keyof typeof UPLOAD_CONFIG, quality: number) {
-  const config = UPLOAD_CONFIG[type];
+  const config = UPLOAD_CONFIG[type] as any;
   return [
     {
       width: config.width,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
     }
 
     const config = UPLOAD_CONFIG[type as keyof typeof UPLOAD_CONFIG];
-    let selectedQuality = config.quality;
+    let selectedQuality: number = config.quality;
     let selectedResult: any = null;
 
     for (const quality of [config.quality, config.quality - 8, config.quality - 14, config.quality - 20].filter((value) => value > 20)) {
