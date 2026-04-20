@@ -59,7 +59,7 @@ export default async function LeaderboardPage() {
               <Trophy className="h-4 w-4" />
               <span>সেরা অবদানকারীদের তালিকা</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4 text-balance">লীডারবোর্ড</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4 text-balance">লিডারবোর্ড</h1>
             <p className="text-gray-500 bengali-text">মন্দির ডিরেক্টরি সমৃদ্ধ করার পেছনে যারা নিরলস কাজ করে যাচ্ছেন।</p>
           </div>
 

@@ -47,8 +47,8 @@ export default async function HomePage() {
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 font-serif leading-[1.1]">
-              খুঁজে নিন আপনার কাছের <br />
-              <span className="text-orange-500">পবিত্র মঠ ও মন্দির</span>
+              এবার বিশ্ব দেখবে <br />
+              <span className="text-orange-500">আমার মন্দির</span>
             </h1>
             
             <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 bengali-text">
