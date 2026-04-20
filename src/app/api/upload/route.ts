@@ -61,7 +61,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid auth token' }, { status: 401 });
     }
 
-    const { image, folder, type } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseErr: any) {
+      console.error('Request body parse error:', parseErr.message);
+      return NextResponse.json({ error: 'Body size too large or invalid JSON' }, { status: 413 });
+    }
+
+    const { image, folder, type } = body;
+
+    if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary credentials missing in server environment');
+      return NextResponse.json({ error: 'Cloudinary not configured' }, { status: 500 });
+    }
 
     if (!image || typeof image !== 'string') {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -102,7 +115,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: result.secure_url });
   } catch (error: any) {
-    console.error('Upload error:', String(error?.message || error));
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    const errorMessage = error?.message || String(error);
+    console.error('Upload error detail:', errorMessage);
+    return NextResponse.json({ error: `Upload failed: ${errorMessage}` }, { status: 500 });
   }
 }

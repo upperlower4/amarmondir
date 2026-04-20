@@ -36,8 +36,8 @@ const formSchema = z.object({
   article_content: z.string().optional(),
 });
 
-const MAX_COVER_SIZE_MB = 6;
-const MAX_GALLERY_SIZE_MB = 6;
+const MAX_COVER_SIZE_MB = 2;
+const MAX_GALLERY_SIZE_MB = 2;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
 function fileToBase64(file: File) {
