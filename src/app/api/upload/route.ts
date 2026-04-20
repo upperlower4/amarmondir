@@ -98,18 +98,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Image too large. Max 8MB allowed.' }, { status: 400 });
     }
 
-    let transformation = '';
+    let transformation: any = [];
     if (type === 'cover') {
-      transformation = 'w_1920,c_limit,q_auto:best,f_webp';
+      transformation = [{ width: 1920, crop: 'limit', quality: 'auto:best', fetch_format: 'webp' }];
     } else if (type === 'gallery') {
-      transformation = 'w_1200,c_limit,q_auto:best,f_webp';
+      transformation = [{ width: 1200, crop: 'limit', quality: 'auto:best', fetch_format: 'webp' }];
     } else {
-      transformation = 'w_200,h_200,c_fill,q_auto:eco,f_webp';
+      transformation = [{ width: 200, height: 200, crop: 'fill', quality: 'auto:eco', fetch_format: 'webp' }];
     }
 
     const result = await cloudinary.uploader.upload(image, {
       folder,
       transformation,
+      format: 'webp',
       resource_type: 'image',
     });
 
