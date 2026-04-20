@@ -32,7 +32,7 @@ export default async function LeaderboardPage() {
               <Trophy className="h-4 w-4" />
               <span>সেরা অবদানকারীদের তালিকা</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4">লীডারবোর্ড</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4 text-balance">লীডারবোর্ড</h1>
             <p className="text-gray-500 bengali-text">মন্দির ডিরেক্টরি সমৃদ্ধ করার পেছনে যারা নিরলস কাজ করে যাচ্ছেন।</p>
           </div>
 
@@ -62,27 +62,27 @@ export default async function LeaderboardPage() {
                 href={`/profile/${user.username}`}
                 className="flex items-center gap-4 bg-white p-4 rounded-2xl border hover:shadow-md transition-shadow group"
               >
-                <div className="w-8 text-center font-bold text-gray-400">
+                <div className="w-8 text-center font-bold text-gray-400 shrink-0">
                   {index + 4}
                 </div>
                 <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                   <AvatarImage src={user.avatar_url || ''} />
                   <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="font-bold truncate group-hover:text-orange-600 transition-colors">
                     {user.full_name || user.username}
                   </p>
                   <p className="text-xs text-gray-400 bengali-text">{user.badge}</p>
                 </div>
-                <div className="flex items-center gap-8 text-sm">
+                <div className="flex items-center gap-4 sm:gap-8 text-sm shrink-0">
                   <div className="flex flex-col items-center">
                     <span className="font-bold text-orange-600">{user.temples_added}</span>
-                    <span className="text-[10px] uppercase text-gray-400 font-bold">মন্দির</span>
+                    <span className="text-[10px] text-gray-400 font-bold">মন্দির</span>
                   </div>
                   <div className="flex flex-col items-center">
                     <span className="font-bold text-blue-600">{user.edits_made}</span>
-                    <span className="text-[10px] uppercase text-gray-400 font-bold">এডিট</span>
+                    <span className="text-[10px] text-gray-400 font-bold">এডিট</span>
                   </div>
                 </div>
               </Link>

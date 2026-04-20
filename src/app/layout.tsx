@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" className="font-sans">
+    <html lang="bn">
       <body className="min-h-screen flex flex-col font-sans bg-white text-gray-900">
         <Toaster position="top-center" />
         {children}

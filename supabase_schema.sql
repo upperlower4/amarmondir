@@ -138,15 +138,16 @@ CREATE POLICY "Users can suggest edits" ON temple_edits FOR INSERT WITH CHECK (a
 CREATE OR REPLACE FUNCTION update_user_stats()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF (TG_OP = 'INSERT') THEN
-    UPDATE profiles 
+  IF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'approved' THEN
+    UPDATE profiles
     SET temples_added = temples_added + 1,
-        badge = CASE 
+        badge = CASE
           WHEN temples_added + 1 >= 10 THEN 'মন্দির রক্ষক'
           WHEN temples_added + 1 >= 5 THEN 'নিবেদিত অবদানকারী'
           WHEN temples_added + 1 >= 2 THEN 'উদীয়মান অবদানকারী'
           ELSE 'নতুন অবদানকারী'
-        END
+        END,
+        updated_at = NOW()
     WHERE id = NEW.created_by;
   END IF;
   RETURN NEW;
@@ -162,11 +163,24 @@ EXECUTE FUNCTION update_user_stats();
 -- Profile Creation Trigger on Auth Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  requested_username TEXT;
+  generated_username TEXT;
 BEGIN
+  requested_username := lower(regexp_replace(COALESCE(NEW.raw_user_meta_data->>'username', ''), '[^a-z0-9_]', '_', 'g'));
+  requested_username := regexp_replace(requested_username, '_+', '_', 'g');
+  requested_username := trim(both '_' from requested_username);
+
+  IF requested_username IS NULL OR requested_username = '' THEN
+    generated_username := split_part(NEW.email, '@', 1) || '_' || substr(NEW.id::TEXT, 1, 4);
+  ELSE
+    generated_username := requested_username;
+  END IF;
+
   INSERT INTO public.profiles (id, username, full_name, avatar_url)
   VALUES (
     NEW.id,
-    LOWER(SPLIT_PART(NEW.email, '@', 1)) || '_' || SUBSTR(CAST(NEW.id AS TEXT), 1, 4),
+    generated_username,
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'avatar_url'
   );

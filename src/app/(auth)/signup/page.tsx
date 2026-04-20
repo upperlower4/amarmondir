@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -22,24 +23,32 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
 
+    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+    if (!cleanUsername || cleanUsername.length < 3) {
+      toast.error('ইউজারনেম কমপক্ষে ৩ অক্ষরের হতে হবে');
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-        }
-      }
+          username: cleanUsername,
+        },
+      },
     });
 
     if (error) {
       toast.error('রেজিস্ট্রেশন ব্যর্থ হয়েছে', {
-        description: String(error.message)
+        description: String(error.message),
       });
       setLoading(false);
     } else {
       toast.success('রেজিস্ট্রেশন সফল হয়েছে!', {
-        description: 'আপনার ইমেইল ভেরিফাই করুন (পাসওয়ার্ড ছাড়া লগ ইন করতে চাইলে)'
+        description: 'অ্যাকাউন্ট তৈরির পর প্রোফাইল এডিট পেজ থেকে তথ্য আপডেট করতে পারবেন।',
       });
       router.push('/login');
     }
@@ -65,31 +74,44 @@ export default function SignupPage() {
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">সম্পূর্ণ নাম</Label>
-                <Input 
-                  id="fullName" 
-                  placeholder="আপনার নাম" 
-                  required 
+                <Input
+                  id="fullName"
+                  placeholder="আপনার নাম"
+                  required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="username">ইউজারনেম</Label>
+                <Input
+                  id="username"
+                  placeholder="your_username"
+                  required
+                  minLength={3}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">a-z, 0-9 এবং underscore ব্যবহার করুন</p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="email">ইমেইল</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  required 
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">পাসওয়ার্ড</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  required 
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />

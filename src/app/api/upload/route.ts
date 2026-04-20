@@ -16,6 +16,32 @@ const ALLOWED_FOLDERS = new Set([
 ]);
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
+const UPLOAD_CONFIG = {
+  cover: {
+    width: 1920,
+    crop: 'limit',
+    minKB: 80,
+    maxKB: 120,
+    quality: 74,
+  },
+  gallery: {
+    width: 1200,
+    crop: 'limit',
+    minKB: 50,
+    maxKB: 80,
+    quality: 70,
+  },
+  avatar: {
+    width: 160,
+    height: 160,
+    crop: 'fill',
+    gravity: 'face',
+    minKB: 8,
+    maxKB: 12,
+    quality: 58,
+  },
+} as const;
+
 function getMimeFromDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
   return match?.[1] || null;
@@ -26,12 +52,24 @@ function getApproxBytesFromDataUrl(dataUrl: string) {
   return Math.floor((base64.length * 3) / 4);
 }
 
+function buildTransformation(type: keyof typeof UPLOAD_CONFIG, quality: number) {
+  const config = UPLOAD_CONFIG[type];
+  return [
+    {
+      width: config.width,
+      ...(config.height ? { height: config.height } : {}),
+      crop: config.crop,
+      ...(config.gravity ? { gravity: config.gravity } : {}),
+      quality,
+      fetch_format: 'webp',
+    },
+  ];
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ')
-      ? authHeader.slice('Bearer '.length)
-      : null;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,23 +136,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Image too large. Max 8MB allowed.' }, { status: 400 });
     }
 
-    let transformation: any = [];
-    if (type === 'cover') {
-      transformation = [{ width: 1920, crop: 'limit', quality: 'auto:best', fetch_format: 'webp' }];
-    } else if (type === 'gallery') {
-      transformation = [{ width: 1200, crop: 'limit', quality: 'auto:best', fetch_format: 'webp' }];
-    } else {
-      transformation = [{ width: 200, height: 200, crop: 'fill', quality: 'auto:eco', fetch_format: 'webp' }];
+    const config = UPLOAD_CONFIG[type as keyof typeof UPLOAD_CONFIG];
+    let selectedQuality = config.quality;
+    let selectedResult: any = null;
+
+    for (const quality of [config.quality, config.quality - 8, config.quality - 14, config.quality - 20].filter((value) => value > 20)) {
+      const result = await cloudinary.uploader.upload(image, {
+        folder,
+        transformation: buildTransformation(type, quality),
+        format: 'webp',
+        resource_type: 'image',
+      });
+
+      selectedQuality = quality;
+      selectedResult = result;
+
+      const bytes = Number(result.bytes || 0);
+      if (!bytes || bytes <= config.maxKB * 1024) {
+        break;
+      }
     }
 
-    const result = await cloudinary.uploader.upload(image, {
-      folder,
-      transformation,
+    return NextResponse.json({
+      url: selectedResult.secure_url,
       format: 'webp',
-      resource_type: 'image',
+      quality: selectedQuality,
+      sizeKB: selectedResult?.bytes ? Math.round(selectedResult.bytes / 1024) : null,
+      targetKB: `${config.minKB}-${config.maxKB}`,
     });
-
-    return NextResponse.json({ url: result.secure_url });
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
     console.error('Upload error detail:', errorMessage);

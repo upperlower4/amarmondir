@@ -57,7 +57,7 @@ async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
     const safeQ = sanitizeSearchTerm(params.q);
     if (safeQ) {
       query = query.or(
-        `title.ilike.%${safeQ}%,english_name.ilike.%${safeQ}%,district.ilike.%${safeQ}%`
+        `title.ilike.%${safeQ}%,english_name.ilike.%${safeQ}%,district.ilike.%${safeQ}%,upazila.ilike.%${safeQ}%,address.ilike.%${safeQ}%,short_bio.ilike.%${safeQ}%,deity.ilike.%${safeQ}%`
       );
     }
 
@@ -94,7 +94,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
       <main className="flex-1 bg-gray-50/50">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row gap-8">
-            <aside className="w-full md:w-64 space-y-8 bg-white p-6 rounded-2xl border h-fit shrink-0 overflow-y-auto max-h-[calc(100vh-8rem)] sticky top-24">
+            <aside className="w-full md:w-64 space-y-8 bg-white p-5 md:p-6 rounded-2xl border h-fit shrink-0 md:overflow-y-auto md:max-h-[calc(100vh-8rem)] md:sticky md:top-24">
               <div>
                 <h3 className="font-bold mb-4 flex items-center gap-2">
                   <Sidebar className="h-4 w-4 text-orange-500" />
@@ -153,7 +153,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                             <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.district === district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
                               {params.district === district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                             </div>
-                            <span className="truncate max-w-[150px]">{district}</span>
+                            <span className="break-anywhere">{district}</span>
                           </Link>
                         ))}
                       </div>
@@ -182,7 +182,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                           <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.type === type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
                             {params.type === type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                           </div>
-                          <span className="truncate max-w-[150px]">{type}</span>
+                          <span className="break-anywhere">{type}</span>
                         </Link>
                       ))}
                     </div>
@@ -214,7 +214,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                   ))}
                 </div>
               ) : (
-                <div className="bg-white rounded-3xl p-20 text-center border-2 border-dashed">
+                <div className="bg-white rounded-3xl p-8 md:p-12 text-center border-2 border-dashed">
                   <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Search className="h-8 w-8 text-gray-400" />
                   </div>
