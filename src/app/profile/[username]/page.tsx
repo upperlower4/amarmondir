@@ -10,6 +10,8 @@ import { notFound } from 'next/navigation';
 import { TempleCard } from '@/components/TempleCard';
 import Link from 'next/link';
 
+import { ProfileActions } from './ProfileActions';
+
 export const dynamic = 'force-dynamic';
 
 async function getProfileData(username: string) {
@@ -121,13 +123,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 </div>
               </div>
 
-              <div className="w-full lg:w-auto flex justify-center lg:justify-end">
-                <Button asChild className="bg-orange-500 hover:bg-orange-600 rounded-xl px-6 h-10 w-full sm:w-auto">
-                  <Link href="/settings/profile">
-                    <Settings className="h-4 w-4 mr-2" /> প্রোফাইল এডিট
-                  </Link>
-                </Button>
-              </div>
+              <ProfileActions profileId={profile.id} />
             </div>
           </div>
         </div>
