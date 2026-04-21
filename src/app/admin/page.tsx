@@ -116,7 +116,10 @@ export default function AdminPage() {
     }
   };
 
-  if (authLoading) return null;
+const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  if (authLoading || !isMounted) return null;
 
   if (!profile?.is_admin) {
     return <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50/50"><Card className="max-w-md w-full text-center p-8 space-y-4"><AlertCircle className="h-12 w-12 text-red-500 mx-auto" /><h1 className="text-xl font-bold">এক্সেস নেই</h1><p className="text-gray-500">এই পৃষ্ঠাটি শুধুমাত্র অ্যাডমিনদের জন্য।</p><Button asChild className="bg-orange-500"><Link href="/">হোমপেজে ফিরে যান</Link></Button></Card></div>;

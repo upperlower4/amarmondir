@@ -7,9 +7,10 @@ import { safeJsonStringify } from '@/lib/utils';
 import { Search, MapPin, Sparkles, Navigation, Users } from 'lucide-react';
 import Link from 'next/link';
 import { DIVISIONS } from '@/lib/constants';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 
 async function getFeaturedTemples() {
+  if (!isConfigured) return [];
   try {
     const { data, error } = await supabase
       .from('temples')

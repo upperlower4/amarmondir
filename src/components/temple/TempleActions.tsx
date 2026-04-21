@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Edit2, Flag, ImagePlus, Loader2, ShieldAlert, ChevronRight, ChevronLeft, Upload, CheckCircle2, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -50,11 +51,35 @@ async function uploadImage(file: File) {
   return data.url as string;
 }
 
+import { useTempleEdit } from './TempleEditProvider';
+import { useEffect } from 'react';
+
 export function TempleActions({ templeId, defaultValues }: { templeId: string; defaultValues: Record<string, any> }) {
+  const { isEditMode, setIsEditMode, setOpenEditDialog } = useTempleEdit();
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
   const [loading, setLoading] = useState<'edit' | 'report' | 'photo' | null>(null);
+
+  // Expose the open function to the context
+  useEffect(() => {
+    setOpenEditDialog((step?: number) => {
+      if (step) setEditStep(step);
+      setEditOpen(true);
+    });
+  }, [setOpenEditDialog]);
+
+  const toggleEditMode = () => {
+    // Open dialog directly as requested for "direct update"
+    setEditOpen(true);
+    setEditStep(1);
+    
+    // Also toggle edit mode to show pencils for individual section edits
+    if (!isEditMode) {
+      setIsEditMode(true);
+      toast.info("এডিট মোড চালু হয়েছে। আপনি সরাসরি ফর্ম পূরণ করতে পারেন অথবা পেন্সিল আইকনে ক্লিক করে নির্দিষ্ট অংশ এডিট করতে পারেন।");
+    }
+  };
 
   // Edit State
   const [editStep, setEditStep] = useState(1);
@@ -153,13 +178,21 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
 
   return (
     <div className="grid grid-cols-1 gap-3">
+      {/* Edit Trigger Button */}
+      <Button 
+        variant={isEditMode ? "default" : "outline"}
+        onClick={toggleEditMode}
+        className={cn(
+          "w-full h-12 rounded-xl flex items-center gap-2 transition-all",
+          isEditMode ? "bg-orange-600 hover:bg-orange-700 text-white shadow-lg ring-2 ring-orange-200" : "border-orange-200 text-orange-600 hover:bg-orange-50"
+        )}
+      >
+        <Edit2 className={cn("h-4 w-4", isEditMode && "animate-pulse")} /> 
+        {isEditMode ? "এডিট মোড বন্ধ করুন" : "তথ্য আপডেট করুন"}
+      </Button>
+
       {/* Edit Modal */}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if(!v) setEditStep(1); }}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full h-12 rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 flex items-center gap-2">
-            <Edit2 className="h-4 w-4" /> তথ্য আপডেট করুন
-          </Button>
-        </DialogTrigger>
         <DialogContent className="max-w-2xl overflow-hidden p-0 rounded-3xl border-none">
           <div className="bg-orange-500 p-6 text-white shrink-0">
             <DialogHeader>

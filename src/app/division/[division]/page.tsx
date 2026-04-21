@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
@@ -10,7 +10,9 @@ export const dynamic = 'force-dynamic';
 export default async function DivisionPage({ params }: { params: Promise<{ division: string }> }) {
   const { division } = await params;
   const decoded = decodeURIComponent(division);
-  const { data: temples } = await supabase.from('temples').select('id, title, slug, district, temple_type, short_bio').eq('division', decoded).eq('status', 'approved').is('deleted_at', null).order('updated_at', { ascending: false });
+  const temples = isConfigured 
+    ? (await supabase.from('temples').select('id, title, slug, district, temple_type, short_bio').eq('division', decoded).eq('status', 'approved').is('deleted_at', null).order('updated_at', { ascending: false })).data
+    : [];
   return <BrowsePage title={`${decoded} division temples`} description={`${decoded} বিভাগের মন্দির তালিকা, location, ধরন এবং সংক্ষিপ্ত পরিচিতি`} items={temples || []} badge={decoded} />;
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -21,6 +22,11 @@ import { cn } from '@/lib/utils';
 
 export function Navbar() {
   const { user, profile } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -56,7 +62,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {user ? (
+          {isMounted && user ? (
             <>
               <Button asChild size="sm" className="hidden sm:flex items-center gap-1.5 px-3 bg-orange-500 hover:bg-orange-600 whitespace-nowrap">
                 <Link href="/add-temple" className="flex items-center gap-1.5">
@@ -176,7 +182,7 @@ export function Navbar() {
                 </Sheet>
               </div>
             </>
-          ) : (
+          ) : isMounted ? (
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
                 <Link href="/login">লগ ইন</Link>
@@ -215,6 +221,8 @@ export function Navbar() {
                 </Sheet>
               </div>
             </div>
+          ) : (
+            <div className="h-9 w-20 bg-gray-100 animate-pulse rounded-xl" />
           )}
         </div>
       </div>

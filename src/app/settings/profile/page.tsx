@@ -29,6 +29,7 @@ function fileToBase64(file: File): Promise<string> {
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -39,6 +40,11 @@ export default function ProfileSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     const loadProfile = async () => {
       const {
         data: { session },
@@ -150,6 +156,8 @@ export default function ProfileSettingsPage() {
     router.push(`/profile/${cleanUsername}`);
     router.refresh();
   };
+
+  if (!isMounted) return null;
 
   return (
     <>

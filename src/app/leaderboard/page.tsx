@@ -4,13 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Sparkles, Flame, CalendarDays, Award } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import Link from 'next/link';
 import { calculateContributionPoints, getContributionBadge } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 async function getLeaders() {
+  if (!isConfigured) return [];
   const [{ data: profiles }, { data: contributors }, { data: edits }, { data: photos }] = await Promise.all([
     supabase.from('profiles').select('id, username, full_name, avatar_url, badge, temples_added, edits_made'),
     supabase.from('temple_contributors').select('profile_id, contribution_type, created_at'),

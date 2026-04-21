@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, MapPin, Edit3, Calendar, ShieldCheck, Settings } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { TempleCard } from '@/components/TempleCard';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import { ProfileActions } from './ProfileActions';
 export const dynamic = 'force-dynamic';
 
 async function getProfileData(username: string) {
+  if (!isConfigured) return null;
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')

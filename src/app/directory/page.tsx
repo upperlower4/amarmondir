@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sidebar, Search } from 'lucide-react';
 import { safeJsonStringify } from '@/lib/utils';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES } from '@/lib/constants';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import Link from 'next/link';
 
 interface DirectoryPageProps {
@@ -49,6 +49,7 @@ function buildDirectoryHref(
 }
 
 async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
+  if (!isConfigured) return [];
   try {
     let query = supabase
       .from('temples')
