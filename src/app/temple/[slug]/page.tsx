@@ -1,6 +1,10 @@
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import Image from 'next/image';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

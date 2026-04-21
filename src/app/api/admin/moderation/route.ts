@@ -33,6 +33,24 @@ export async function POST(req: Request) {
         const status = action === 'approve' ? 'approved' : 'rejected';
         const { error } = await admin.from('temples').update({ status, moderation_reason: note || null }).in('id', targetIds);
         if (error) throw error;
+
+        if (action === 'approve') {
+          const { data: approvedTemples } = await admin.from('temples').select('id, created_by').in('id', targetIds);
+          for (const t of approvedTemples || []) {
+            if (t.created_by) {
+              await admin.from('temple_contributors').upsert({
+                temple_id: t.id,
+                profile_id: t.created_by,
+                contribution_type: 'original',
+              }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+
+              const { data: userProfile } = await admin.from('profiles').select('temples_added').eq('id', t.created_by).single();
+              if (userProfile) {
+                await admin.from('profiles').update({ temples_added: (userProfile.temples_added || 0) + 1 }).eq('id', t.created_by);
+              }
+            }
+          }
+        }
       } else if (action === 'feature') {
         const { error } = await admin.from('temples').update({ is_featured: true }).in('id', targetIds);
         if (error) throw error;
@@ -49,12 +67,25 @@ export async function POST(req: Request) {
     }
 
     if (entity === 'edit') {
-      const { data: edits } = await admin.from('temple_edits').select('id, temple_id, suggested_data').in('id', targetIds);
+      const { data: edits } = await admin.from('temple_edits').select('id, temple_id, profile_id, suggested_data').in('id', targetIds);
       if (action === 'approve') {
         for (const edit of edits || []) {
           const suggested = edit.suggested_data || {};
           const cleaned = Object.fromEntries(Object.entries(suggested).filter(([k]) => !['duplicate_hint'].includes(k)));
           await admin.from('temples').update(cleaned).eq('id', edit.temple_id);
+          
+          // Add as contributor
+          await admin.from('temple_contributors').upsert({
+            temple_id: edit.temple_id,
+            profile_id: edit.profile_id,
+            contribution_type: 'edit',
+          }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+
+          // Update user stats
+          const { data: userProfile } = await admin.from('profiles').select('edits_made').eq('id', edit.profile_id).single();
+          if (userProfile) {
+            await admin.from('profiles').update({ edits_made: (userProfile.edits_made || 0) + 1 }).eq('id', edit.profile_id);
+          }
         }
       }
       const mappedStatus = action === 'approve' ? 'approved' : 'rejected';
@@ -73,6 +104,19 @@ export async function POST(req: Request) {
         const status = action === 'approve' ? 'approved' : 'rejected';
         const { error } = await admin.from('temple_photos').update({ status }).in('id', targetIds);
         if (error) throw error;
+
+        if (action === 'approve') {
+          const { data: photos } = await admin.from('temple_photos').select('id, temple_id, profile_id').in('id', targetIds);
+          for (const photo of photos || []) {
+            if (photo.profile_id) {
+              await admin.from('temple_contributors').upsert({
+                temple_id: photo.temple_id,
+                profile_id: photo.profile_id,
+                contribution_type: 'photo',
+              }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+            }
+          }
+        }
       } else if (action === 'set_cover') {
         const { data: photo } = await admin.from('temple_photos').select('id, temple_id, url').eq('id', targetIds[0]).single();
         if (photo) {
