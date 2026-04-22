@@ -68,10 +68,6 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
     });
   }, [setOpenEditDialog]);
 
-  useEffect(() => {
-    setEditValues(initialEdit);
-  }, [initialEdit]);
-
   const toggleEditMode = () => {
     if (isEditMode) {
       setIsEditMode(false);
@@ -100,6 +96,10 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
   }), [defaultValues]);
 
   const [editValues, setEditValues] = useState(initialEdit);
+
+  useEffect(() => {
+    setEditValues(initialEdit);
+  }, [initialEdit]);
 
   // Photo State
   const [photoStep, setPhotoStep] = useState(1);
