@@ -28,6 +28,7 @@ export function EditableField({ templeId, field, label, currentValue, children, 
   const displayValue = optimisticValue !== null ? optimisticValue : currentValue;
 
   const handleSave = async () => {
+    console.log('handleSave called');
     if (value === currentValue) {
       setIsEditing(false);
       return;

@@ -19,6 +19,14 @@ const nextConfig = {
     minimumCacheTTL: 31536000, // 1 year caching for Next.js image optimization
     dangerouslyAllowSVG: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/temples',
+        destination: '/directory',
+      },
+    ];
+  },
   async headers() {
     return [
       {
