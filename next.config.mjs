@@ -16,8 +16,31 @@ const nextConfig = {
         hostname: 'picsum.photos',
       },
     ],
-    minimumCacheTTL: 604800, // 7 days in seconds
+    minimumCacheTTL: 31536000, // 1 year caching for Next.js image optimization
     dangerouslyAllowSVG: true,
+  },
+  async headers() {
+    return [
+      {
+        source: '/_next/image(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache images in public directory or any static assets
+        source: '/(.*).(png|jpg|jpeg|svg|gif|ico|webp)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
   },
 };
 

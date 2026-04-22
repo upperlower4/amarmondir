@@ -15,7 +15,14 @@ export const isConfigured = Boolean(envSupabaseUrl && envSupabaseAnonKey);
 const supabaseUrl = envSupabaseUrl || 'https://placeholder.supabase.co';
 const supabaseAnonKey = envSupabaseAnonKey || 'placeholder-anon-key';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'amarmondir-auth-token',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    autoRefreshToken: true,
+  }
+});
 
 export const getSupabaseAdmin = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
