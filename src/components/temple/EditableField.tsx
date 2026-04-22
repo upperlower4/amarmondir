@@ -1,40 +1,122 @@
 'use client';
 
-import { Pencil } from 'lucide-react';
-import { useTempleEdit } from './TempleEditProvider';
+import { useState } from 'react';
+import { Pencil, Check, X, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface EditableFieldProps {
+  templeId: string;
+  field: string;
+  label: string;
+  currentValue: string;
   children: React.ReactNode;
-  step?: number;
-  className?: string;
-  label?: string;
+  multiline?: boolean;
+  editMode?: boolean;
 }
 
-export function EditableField({ children, step = 1, className, label }: EditableFieldProps) {
-  const { isEditMode, openEditDialog } = useTempleEdit();
+export function EditableField({ templeId, field, label, currentValue, children, multiline = false, editMode = false }: EditableFieldProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(currentValue || '');
+  const [loading, setLoading] = useState(false);
+  const [optimisticValue, setOptimisticValue] = useState<string | null>(null);
+
+  const displayValue = optimisticValue !== null ? optimisticValue : currentValue;
+
+  const handleSave = async () => {
+    if (value === currentValue) {
+      setIsEditing(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('তথ্য আপডেট করতে আপনাকে লগইন করতে হবে।');
+      }
+
+      const res = await fetch(`/api/temples/${templeId}/edit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ suggestedData: { [field]: value } })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'আপডেট করতে সমস্যা হয়েছে');
+
+      setOptimisticValue(value);
+      toast.success('সফলভাবে আপডেট করা হয়েছে', {
+        description: 'অ্যাডমিন ভেরিফাইয়ের পর এটি চূড়ান্ত হবে।'
+      });
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error('ত্রুটি', { description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex flex-col gap-2 relative w-full bg-orange-50/50 p-3 rounded-xl border border-orange-100 mt-2">
+        <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider">এডিট করছেন: {label}</span>
+        {multiline ? (
+          <Textarea 
+            value={value} 
+            onChange={e => setValue(e.target.value)} 
+            className="text-sm bg-white min-h-[120px]" 
+            autoFocus 
+          />
+        ) : (
+          <Input 
+            value={value} 
+            onChange={e => setValue(e.target.value)} 
+            className="h-9 text-sm bg-white" 
+            autoFocus 
+          />
+        )}
+        <div className="flex items-center gap-2 mt-1">
+          <Button size="sm" onClick={handleSave} disabled={loading} className="h-8 px-4 bg-green-600 hover:bg-green-700 text-white shadow-sm">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Check className="w-3.5 h-3.5 mr-1.5" />} সেভ করুন
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setIsEditing(false); setValue(displayValue || ''); }} disabled={loading} className="h-8 px-4 border-gray-200 hover:bg-gray-100 text-gray-700">
+            <X className="w-3.5 h-3.5 mr-1.5" /> বাতিল
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("relative group/editable", className)}>
-      {children}
-      <AnimatePresence>
-        {isEditMode && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={() => openEditDialog(step)}
-            className="absolute -top-3 -right-3 z-50 bg-orange-500 text-white p-2 rounded-full shadow-lg hover:bg-orange-600 transition-colors border-2 border-white"
-            title={label ? `${label} এডিট করুন` : "এডিট করুন"}
-          >
-            <Pencil className="h-4 w-4" />
-          </motion.button>
+    <div className="group relative w-full flex items-start gap-3">
+      <div className="flex-1 min-w-0 relative">
+        {children}
+        {optimisticValue !== null && (
+          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
+            <strong>আপনার আপডেট:</strong> {optimisticValue.length > 50 ? optimisticValue.substring(0, 50) + '...' : optimisticValue} (অপেক্ষমান)
+          </div>
         )}
-      </AnimatePresence>
-      {isEditMode && (
-        <div className="absolute inset-0 border-2 border-dashed border-orange-400/30 rounded-xl pointer-events-none -m-2 z-10" />
-      )}
+      </div>
+      <button
+        onClick={() => setIsEditing(true)}
+        className={cn(
+          "p-2 shrink-0 transition-all rounded-lg border",
+          editMode 
+            ? "bg-orange-100 text-orange-600 border-orange-200 opacity-100" 
+            : "text-gray-400 bg-gray-50/50 border-gray-100 hover:text-orange-600 hover:bg-orange-100 hover:border-orange-200 group-hover:opacity-100 focus:opacity-100"
+        )}
+        title={`${label} আপডেট করুন`}
+      >
+        <Pencil className="w-4 h-4" />
+      </button>
     </div>
   );
 }

@@ -22,7 +22,7 @@ async function getProfileData(username: string) {
     .eq('profile_id', profile.id);
 
   const approvedTemples = (contributedTemples || [])
-    .filter((c: any) => c.temples && c.temples.status === 'approved')
+    .filter((c: any) => c.temples && c.temples.status === 'approved' && c.temples.slug != null)
     .map((c: any) => c.temples);
 
   const templeCount = (contributedTemples || []).filter((c: any) => c.contribution_type === 'original' && c.temples?.status === 'approved').length;
@@ -125,7 +125,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </div>
 
         <div className="container mx-auto px-4 -translate-y-6 md:-translate-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             <StatCard icon={MapPin} label="মন্দির যোগ করা হয়েছে" value={profile.temples_added} color="text-orange-500" />
             <StatCard icon={Edit3} label="এডিট সাজেশন" value={profile.edits_made} color="text-blue-500" />
             <StatCard icon={Trophy} label="লিডারবোর্ড র‍্যাঙ্ক" value={leaderboardRank ? `#${leaderboardRank}` : 'N/A'} color="text-yellow-600" />
@@ -157,13 +157,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: any; color: string }) {
   return (
     <Card className="border-none shadow-xl shadow-gray-200/50 rounded-2xl overflow-hidden h-full">
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 ${color}`}>
-          <Icon className="h-6 w-6" />
+      <CardContent className="p-2.5 md:p-5 flex items-center gap-2.5 md:gap-4">
+        <div className={`w-8 h-8 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 ${color}`}>
+          <Icon className="h-4 w-4 md:h-6 md:w-6" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-bold text-gray-400 tracking-wide mb-1 leading-snug break-anywhere">{label}</p>
-          <p className="text-2xl font-bold leading-none break-anywhere">{value}</p>
+          <p className="text-[9px] md:text-[11px] font-bold text-gray-400 tracking-wide mb-0 md:mb-1 leading-snug break-anywhere">{label}</p>
+          <p className="text-lg md:text-2xl font-bold leading-none break-anywhere">{value}</p>
         </div>
       </CardContent>
     </Card>

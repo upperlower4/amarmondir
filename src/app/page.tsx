@@ -26,6 +26,7 @@ async function getHomeData() {
       .from('temples')
       .select('*')
       .eq('status', 'approved')
+      .not('slug', 'is', null)
       .eq('is_featured', true)
       .is('deleted_at', null)
       .order('updated_at', { ascending: false })
@@ -34,6 +35,7 @@ async function getHomeData() {
       .from('temples')
       .select('*')
       .eq('status', 'approved')
+      .not('slug', 'is', null)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(8),
