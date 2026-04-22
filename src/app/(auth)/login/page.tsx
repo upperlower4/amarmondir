@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 
@@ -19,6 +19,14 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isConfigured) {
+      toast.error('সিস্টেম এরর', {
+        description: 'Supabase ডাটাবেস ঠিকভাবে কনফিগার করা হয়নি। দয়া করে সেটিংস চেক করুন।',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -35,8 +43,16 @@ export default function LoginPage() {
       router.push('/');
       router.refresh();
     } catch (error: any) {
+      let errorMsg = String(error?.message || error);
+      
+      if (errorMsg.includes('Email not confirmed')) {
+        errorMsg = 'আপনার ইমেইলটি ভেরিফাই করা হয়নি। ইনবক্স (বা স্প্যাম ফোল্ডার) চেক করে কনফার্মেশন লিংকে ক্লিক করুন।';
+      } else if (errorMsg.includes('Invalid login credentials')) {
+        errorMsg = 'ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন। দয়া করে আবার চেষ্টা করুন।';
+      }
+
       toast.error('লগ ইন ব্যর্থ হয়েছে', {
-        description: String(error?.message || error),
+        description: errorMsg,
       });
     } finally {
       setLoading(false);

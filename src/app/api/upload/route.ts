@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { createClient } from '@supabase/supabase-js';
 
 cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'] as string,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
@@ -50,8 +50,8 @@ export async function POST(req: Request) {
 
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] as string;
+    const supabaseAnonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] as string;
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Supabase env missing' }, { status: 500 });
     }
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { image, folder, type } = body || {};
 
-    if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET || !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
+    if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET || !process.env['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME']) {
       return NextResponse.json({ error: 'Cloudinary not configured' }, { status: 500 });
     }
 

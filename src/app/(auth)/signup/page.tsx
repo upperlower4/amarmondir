@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 import { sanitizeUsername } from '@/lib/utils';
@@ -22,6 +22,14 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isConfigured) {
+      toast.error('সিস্টেম এরর', {
+        description: 'Supabase ডাটাবেস ঠিকভাবে কনফিগার করা হয়নি। দয়া করে সেটিংস চেক করুন।',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -58,12 +66,18 @@ export default function SignupPage() {
       }
 
       toast.success('রেজিস্ট্রেশন সফল হয়েছে!', {
-        description: 'অ্যাকাউন্ট তৈরির পর প্রোফাইল এডিট পেজ থেকে তথ্য আপডেট করতে পারবেন।',
+        description: 'দয়া করে আপনার ইমেইলের ইনবক্স চেক করুন এবং ভেরিফিকেশন লিংকে ক্লিক করুন। এরপরেই আপনি লগ ইন করতে পারবেন।',
       });
       router.push('/login');
     } catch (error: any) {
+      let errorMsg = String(error?.message || error);
+      
+      if (errorMsg.includes('User already registered')) {
+        errorMsg = 'এই ইমেইল দিয়ে ইতিমধ্যেই একটি অ্যাকাউন্ট খোলা হয়েছে।';
+      }
+
       toast.error('রেজিস্ট্রেশন ব্যর্থ হয়েছে', {
-        description: String(error?.message || error),
+        description: errorMsg,
       });
     } finally {
       setLoading(false);

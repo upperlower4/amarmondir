@@ -7,7 +7,7 @@ async function getUser(req: Request) {
   const authHeader = req.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
   if (!token) return { user: null };
-  const authClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  const authClient = createClient(process.env['NEXT_PUBLIC_SUPABASE_URL'] as string, process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] as string, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await authClient.auth.getUser();

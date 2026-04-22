@@ -9,7 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const authClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const authClient = createClient(process.env['NEXT_PUBLIC_SUPABASE_URL'] as string, process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] as string, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
     const { data: { user }, error: authErr } = await authClient.auth.getUser();

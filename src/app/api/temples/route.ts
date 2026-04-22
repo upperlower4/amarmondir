@@ -15,8 +15,8 @@ export async function POST(req: Request) {
 
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] as string;
+    const supabaseAnonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] as string;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Supabase env missing' }, { status: 500 });

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   
   const query = supabase
     .from('temples')
-    .select('*, profiles(username, avatar_url)')
+    .select('*, profiles!temples_created_by_fkey(username, avatar_url)')
     .eq('status', 'approved')
     .limit(1);
     

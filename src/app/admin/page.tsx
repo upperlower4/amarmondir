@@ -36,7 +36,7 @@ export default function AdminPage() {
     const [templeRes, editRes] = await Promise.all([
       supabase
         .from('temples')
-        .select('*, profiles(username, full_name, avatar_url)')
+        .select('*, profiles!temples_created_by_fkey(username, full_name, avatar_url)')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
       supabase
