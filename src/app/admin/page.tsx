@@ -115,8 +115,15 @@ export default function AdminPage() {
   const handleModerateTemple = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);
     try {
-      const { error } = await supabase.from('temples').update({ status }).eq('id', id);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ entity: 'temple', action: status === 'approved' ? 'approve' : 'reject', id })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
 
       toast.success(status === 'approved' ? 'মন্দির এপ্রুভ করা হয়েছে' : 'মন্দির রিজেক্ট করা হয়েছে');
       
@@ -127,7 +134,7 @@ export default function AdminPage() {
         setStats(s => ({ ...s, approvedTemples: s.approvedTemples + 1 }));
       }
     } catch (error: any) {
-      toast.error('অপারেশন ব্যর্থ হয়েছে');
+      toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
     } finally {
       setProcessingId(null);
     }
@@ -136,19 +143,21 @@ export default function AdminPage() {
   const handleModerateEdit = async (editId: string, templeId: string, suggestedData: any, status: 'approved' | 'rejected') => {
     setProcessingId(`edit-${editId}`);
     try {
-      if (status === 'approved') {
-        const { error: updateError } = await supabase.from('temples').update(suggestedData).eq('id', templeId);
-        if (updateError) throw updateError;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ entity: 'edit', action: status === 'approved' ? 'approve' : 'reject', id: editId })
+      });
       
-      const { error } = await supabase.from('temple_edits').update({ status }).eq('id', editId);
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
 
       toast.success(status === 'approved' ? 'এডিট এপ্রুভ করা হয়েছে' : 'এডিট রিজেক্ট করা হয়েছে');
       setPendingEdits((prev) => prev.filter((e) => e.id !== editId));
       setStats(s => ({ ...s, pendingEditCount: s.pendingEditCount - 1 }));
     } catch (error: any) {
-      toast.error('অপারেশন ব্যর্থ হয়েছে');
+      toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
     } finally {
       setProcessingId(null);
     }
