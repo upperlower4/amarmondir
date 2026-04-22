@@ -75,11 +75,13 @@ export async function POST(req: Request) {
           await admin.from('temples').update(cleaned).eq('id', edit.temple_id);
           
           // Add as contributor
-          await admin.from('temple_contributors').upsert({
+          const { error: contribError } = await admin.from('temple_contributors').upsert({
             temple_id: edit.temple_id,
             profile_id: edit.profile_id,
             contribution_type: 'edit',
           }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+          
+          if (contribError) console.error('Error upserting contributor:', contribError);
 
           // Update user stats
           const { data: userProfile } = await admin.from('profiles').select('edits_made').eq('id', edit.profile_id).single();
