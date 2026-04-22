@@ -34,10 +34,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 min-w-0">
             
             <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 font-serif truncate">
-              <a href="/">
-  <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir">
-  </a>
-              
+              <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir" className="h-8 w-auto" />
             </span>
           </Link>
 
