@@ -36,7 +36,7 @@ export function Navbar() {
             <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 font-serif truncate">
               <a href="/">
   <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir">
-  </a?
+  </a>
               
             </span>
           </Link>
