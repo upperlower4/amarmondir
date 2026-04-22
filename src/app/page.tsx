@@ -76,8 +76,16 @@ export default async function HomePage() {
                 <Star className="h-4 w-4" />
                 <span>বাংলাদেশের মন্দির ডিরেক্টরি</span>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold font-serif text-gray-900 mb-5 leading-tight">
-                আমার মন্দির
+              <div className="flex justify-center mb-6">
+                <img
+                  src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825110/Logo_pmyblv.png"
+                  alt="Amar Mondir Logo"
+                  className="h-24 md:h-32 w-auto"
+                />
+              </div>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 font-serif leading-[1.1]">
+                এবার বিশ্ব দেখবে <br />
+                <span className="text-orange-500">আমার মন্দির</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 bengali-text mb-8 leading-relaxed max-w-2xl mx-auto">
                 বাংলাদেশের সকল হিন্দু মন্দির ও তীর্থস্থানের সমৃদ্ধ ডিরেক্টরি। আপনার এলাকার মন্দির খুঁজুন এবং তথ্য যোগ করে সংরক্ষণে অবদান রাখুন।
