@@ -32,11 +32,12 @@ export function Navbar() {
       <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-4 md:gap-8 min-w-0">
           <Link href="/" className="flex items-center gap-2 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-200 shrink-0">
-              <MapPin className="h-6 w-6" />
-            </div>
+            
             <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 font-serif truncate">
-              amarmondir
+              <a href="https://example.com">
+  <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir">
+  </a?
+              
             </span>
           </Link>
 
