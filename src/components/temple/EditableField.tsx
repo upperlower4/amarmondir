@@ -105,18 +105,15 @@ export function EditableField({ templeId, field, label, currentValue, children, 
           </div>
         )}
       </div>
-      <button
-        onClick={() => setIsEditing(true)}
-        className={cn(
-          "p-2 shrink-0 transition-all rounded-lg border",
-          editMode 
-            ? "bg-orange-100 text-orange-600 border-orange-200 opacity-100" 
-            : "text-gray-400 bg-gray-50/50 border-gray-100 hover:text-orange-600 hover:bg-orange-100 hover:border-orange-200 group-hover:opacity-100 focus:opacity-100"
-        )}
-        title={`${label} আপডেট করুন`}
-      >
-        <Pencil className="w-4 h-4" />
-      </button>
+      {editMode && (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="p-2 shrink-0 transition-all rounded-lg border bg-orange-100 text-orange-600 border-orange-200"
+          title={`${label} আপডেট করুন`}
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }
