@@ -1,24 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const envSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const envSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
-}
+export const isConfigured = Boolean(envSupabaseUrl && envSupabaseAnonKey);
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
-}
+const supabaseUrl = envSupabaseUrl ?? 'https://placeholder.supabase.co';
+const supabaseAnonKey = envSupabaseAnonKey ?? 'placeholder-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const getSupabaseAdmin = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!serviceRoleKey) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+  if (!envSupabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing Supabase admin environment variables');
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(envSupabaseUrl, serviceRoleKey);
 };

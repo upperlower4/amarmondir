@@ -2,91 +2,137 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { safeJsonStringify } from '@/lib/utils';
-import { syncProfileStats } from '@/lib/contribution';
 
 async function getAdminUser(req: Request) {
   const authHeader = req.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
   if (!token) return { error: 'Unauthorized' } as const;
-
   const authClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
-
   const { data: { user }, error } = await authClient.auth.getUser();
   if (error || !user) return { error: 'Invalid token' } as const;
-
   const admin = getSupabaseAdmin();
   const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', user.id).single();
   if (!profile?.is_admin) return { error: 'Forbidden' } as const;
-
   return { user } as const;
 }
 
 export async function POST(req: Request) {
   try {
     const auth = await getAdminUser(req);
-    if ('error' in auth) {
-      return NextResponse.json({ error: auth.error }, { status: auth.error === 'Forbidden' ? 403 : 401 });
-    }
+    if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.error === 'Forbidden' ? 403 : 401 });
 
     const admin = getSupabaseAdmin();
     const body = await req.json();
-    const { entity, action, id } = body || {};
-
-    if (!entity || !action || !id) {
-      return NextResponse.json({ error: 'Missing moderation payload' }, { status: 400 });
-    }
+    const { entity, action, id, ids = [], note } = body;
+    const targetIds = ids.length ? ids : [id].filter(Boolean);
 
     if (entity === 'temple') {
-      const status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : null;
-      if (!status) return NextResponse.json({ error: 'Invalid temple action' }, { status: 400 });
+      if (action === 'approve' || action === 'reject') {
+        const status = action === 'approve' ? 'approved' : 'rejected';
+        const { error } = await admin.from('temples').update({ status, moderation_reason: note || null }).in('id', targetIds);
+        if (error) throw error;
 
-      const { data: templeBefore } = await admin.from('temples').select('id, created_by').eq('id', id).single();
-      const { error } = await admin.from('temples').update({ status }).eq('id', id);
-      if (error) throw error;
+        if (action === 'approve') {
+          const { data: approvedTemples } = await admin.from('temples').select('id, created_by').in('id', targetIds);
+          for (const t of approvedTemples || []) {
+            if (t.created_by) {
+              await admin.from('temple_contributors').upsert({
+                temple_id: t.id,
+                profile_id: t.created_by,
+                contribution_type: 'original',
+              }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
 
-      if (templeBefore?.created_by) {
-        if (status === 'approved') {
-          await admin.from('temple_contributors').upsert({
-            temple_id: templeBefore.id,
-            profile_id: templeBefore.created_by,
-            contribution_type: 'original',
-          }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+              const { data: userProfile } = await admin.from('profiles').select('temples_added').eq('id', t.created_by).single();
+              if (userProfile) {
+                await admin.from('profiles').update({ temples_added: (userProfile.temples_added || 0) + 1 }).eq('id', t.created_by);
+              }
+            }
+          }
         }
-        await syncProfileStats(templeBefore.created_by);
+      } else if (action === 'feature') {
+        const { error } = await admin.from('temples').update({ is_featured: true }).in('id', targetIds);
+        if (error) throw error;
+      } else if (action === 'unfeature') {
+        const { error } = await admin.from('temples').update({ is_featured: false }).in('id', targetIds);
+        if (error) throw error;
+      } else if (action === 'soft_delete') {
+        const { error } = await admin.from('temples').update({ deleted_at: new Date().toISOString(), deleted_by: auth.user.id }).in('id', targetIds);
+        if (error) throw error;
+      } else if (action === 'restore') {
+        const { error } = await admin.from('temples').update({ deleted_at: null, deleted_by: null }).in('id', targetIds);
+        if (error) throw error;
       }
     }
 
     if (entity === 'edit') {
-      const status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : null;
-      if (!status) return NextResponse.json({ error: 'Invalid edit action' }, { status: 400 });
+      const { data: edits } = await admin.from('temple_edits').select('id, temple_id, profile_id, suggested_data').in('id', targetIds);
+      if (action === 'approve') {
+        for (const edit of edits || []) {
+          const suggested = edit.suggested_data || {};
+          const cleaned = Object.fromEntries(Object.entries(suggested).filter(([k]) => !['duplicate_hint'].includes(k)));
+          await admin.from('temples').update(cleaned).eq('id', edit.temple_id);
+          
+          // Add as contributor
+          await admin.from('temple_contributors').upsert({
+            temple_id: edit.temple_id,
+            profile_id: edit.profile_id,
+            contribution_type: 'edit',
+          }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
 
-      const { data: edit } = await admin
-        .from('temple_edits')
-        .select('id, temple_id, profile_id, suggested_data')
-        .eq('id', id)
-        .single();
-
-      if (!edit) {
-        return NextResponse.json({ error: 'Edit request not found' }, { status: 404 });
+          // Update user stats
+          const { data: userProfile } = await admin.from('profiles').select('edits_made').eq('id', edit.profile_id).single();
+          if (userProfile) {
+            await admin.from('profiles').update({ edits_made: (userProfile.edits_made || 0) + 1 }).eq('id', edit.profile_id);
+          }
+        }
       }
-
-      if (status === 'approved') {
-        const suggested = edit.suggested_data || {};
-        await admin.from('temples').update(suggested).eq('id', edit.temple_id);
-        await admin.from('temple_contributors').upsert({
-          temple_id: edit.temple_id,
-          profile_id: edit.profile_id,
-          contribution_type: 'edit',
-        }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
-      }
-
-      const { error } = await admin.from('temple_edits').update({ status }).eq('id', id);
+      const mappedStatus = action === 'approve' ? 'approved' : 'rejected';
+      const { error } = await admin.from('temple_edits').update({ status: mappedStatus, moderator_note: note || null }).in('id', targetIds);
       if (error) throw error;
+    }
 
-      if (edit.profile_id) {
-        await syncProfileStats(edit.profile_id);
+    if (entity === 'report') {
+      const mappedStatus = action === 'resolve' ? 'resolved' : action === 'reject' ? 'rejected' : 'reviewed';
+      const { error } = await admin.from('temple_reports').update({ status: mappedStatus, moderator_note: note || null }).in('id', targetIds);
+      if (error) throw error;
+    }
+
+    if (entity === 'photo') {
+      if (action === 'approve' || action === 'reject') {
+        const status = action === 'approve' ? 'approved' : 'rejected';
+        const { error } = await admin.from('temple_photos').update({ status }).in('id', targetIds);
+        if (error) throw error;
+
+        if (action === 'approve') {
+          const { data: photos } = await admin.from('temple_photos').select('id, temple_id, profile_id').in('id', targetIds);
+          for (const photo of photos || []) {
+            if (photo.profile_id) {
+              await admin.from('temple_contributors').upsert({
+                temple_id: photo.temple_id,
+                profile_id: photo.profile_id,
+                contribution_type: 'photo',
+              }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+            }
+          }
+        }
+      } else if (action === 'set_cover') {
+        const { data: photo } = await admin.from('temple_photos').select('id, temple_id, url').eq('id', targetIds[0]).single();
+        if (photo) {
+          await admin.from('temples').update({ cover_image: photo.url }).eq('id', photo.temple_id);
+          await admin.from('temple_photos').update({ is_cover_requested: false, status: 'approved' }).eq('id', photo.id);
+        }
+      }
+    }
+
+    if (entity === 'user') {
+      if (action === 'suspend' || action === 'ban') {
+        const { error } = await admin.from('profiles').update({ is_suspended: true, suspension_reason: note || action }).in('id', targetIds);
+        if (error) throw error;
+      } else if (action === 'unsuspend') {
+        const { error } = await admin.from('profiles').update({ is_suspended: false, suspension_reason: null }).in('id', targetIds);
+        if (error) throw error;
       }
     }
 

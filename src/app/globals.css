@@ -12,21 +12,30 @@
 @layer base {
   * {
     @apply border-gray-200;
+    box-sizing: border-box;
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply bg-[#fcfaf7] text-gray-900 antialiased;
     font-family: var(--font-sans);
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
-    -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overflow-x: hidden;
   }
 
   body::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for Chrome, Safari, Opera */
+    display: none;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
   }
 
   h1,

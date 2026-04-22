@@ -9,6 +9,8 @@ import { DIVISIONS, DISTRICTS, TEMPLE_TYPES } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 interface DirectoryPageProps {
   searchParams: Promise<{
     q?: string;
@@ -19,7 +21,7 @@ interface DirectoryPageProps {
 }
 
 function sanitizeSearchTerm(value?: string) {
-  return (value || '').replace(/[,%()]/g, ' ').trim();
+  return (value || '').replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function buildDirectoryHref(
@@ -53,12 +55,15 @@ async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
     let query = supabase
       .from('temples')
       .select('*')
-      .eq('status', 'approved');
+      .eq('status', 'approved')
+      .not('slug', 'is', null);
 
     const safeQ = sanitizeSearchTerm(params.q);
     if (safeQ) {
+      const tokens = safeQ.split(' ').filter(Boolean);
+      const strongest = tokens[0] || safeQ;
       query = query.or(
-        `title.ilike.%${safeQ}%,english_name.ilike.%${safeQ}%,district.ilike.%${safeQ}%,upazila.ilike.%${safeQ}%,address.ilike.%${safeQ}%,short_bio.ilike.%${safeQ}%,deity.ilike.%${safeQ}%`
+        `title.ilike.*${strongest}*,english_name.ilike.*${strongest}*,district.ilike.*${strongest}*,upazila.ilike.*${strongest}*,address.ilike.*${strongest}*,short_bio.ilike.*${strongest}*,deity.ilike.*${strongest}*`
       );
     }
 
@@ -299,7 +304,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                   <p className="text-sm text-gray-500 bengali-text">মোট {temples.length}টি মন্দির পাওয়া গেছে</p>
                 </div>
 
-                <form action="/directory" method="GET" className="flex items-center gap-2 flex-wrap">
+                <form action="/directory" method="GET" className="flex items-center gap-2 w-full sm:w-auto">
                   {params.division && <input type="hidden" name="division" value={params.division} />}
                   {params.district && <input type="hidden" name="district" value={params.district} />}
                   {params.type && <input type="hidden" name="type" value={params.type} />}
