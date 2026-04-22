@@ -102,12 +102,12 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
               </Badge>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-3 font-serif leading-tight">{temple.title}</h1>
-            <p className="text-xl text-gray-500 italic md:text-2xl mb-8 tracking-wide">
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-3 font-serif leading-tight">{temple.title}</h1>
+            <p className="text-lg text-gray-500 italic md:text-2xl mb-6 md:mb-8 tracking-wide">
               {temple.english_name}
             </p>
 
-            <div className="flex flex-wrap items-center gap-6 text-gray-600 text-sm md:text-base bg-white p-5 rounded-2xl w-fit shadow-sm border border-gray-100">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-gray-600 text-sm md:text-base bg-white p-4 md:p-5 rounded-2xl w-full md:w-fit shadow-sm border border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-50 rounded-xl">
                   <MapPin className="h-5 w-5 text-orange-600" />
@@ -156,13 +156,13 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                 </section>
               )}
 
-              <section className="bg-white p-8 rounded-[2rem] shadow-sm border">
+              <section className="bg-white p-4 md:p-8 rounded-2xl md:rounded-[2rem] shadow-sm border">
                 <Tabs defaultValue="about" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-8 bg-orange-50/50 p-1 h-14 rounded-xl">
-                    <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                  <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 bg-orange-50/50 p-1 h-12 md:h-14 rounded-xl">
+                    <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm md:text-base">
                       সংক্ষিপ্ত বর্ণনা
                     </TabsTrigger>
-                    <TabsTrigger value="article" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                    <TabsTrigger value="article" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm md:text-base">
                       বিস্তারিত খবর/ইতিহাস
                     </TabsTrigger>
                   </TabsList>
@@ -191,7 +191,7 @@ export default async function TemplePage({ params }: { params: Promise<{ slug: s
                         </div>
                       )}
                       
-                      <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 bg-orange-50 rounded-3xl border border-orange-100">
+                      <div className="mt-8 md:mt-12 flex flex-col md:flex-row items-center justify-between p-4 md:p-8 bg-orange-50 rounded-2xl md:rounded-3xl border border-orange-100">
                         <div>
                           <h4 className="font-bold text-gray-900 mb-1 text-xl">আপনার তোলা ছবি আছে?</h4>
                           <p className="text-gray-600 text-sm bengali-text">মন্দিরের যেকোনো নতুন ছবি বা গ্যালারি আপডেট করতে পারেন।</p>
