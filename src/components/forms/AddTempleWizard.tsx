@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES, CLOUDINARY_FOLDERS } from '@/lib/constants';
+import { UPAZILAS } from '@/lib/upazilas';
 import { ImagePlus, MapPin, CheckCircle, Info, FileText, Loader2, Sparkles, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -78,10 +79,16 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   });
 
   const selectedDivision = form.watch('division');
+  const selectedDistrict = form.watch('district');
 
   useEffect(() => {
     form.setValue('district', '');
+    form.setValue('upazila', '');
   }, [selectedDivision, form]);
+
+  useEffect(() => {
+    form.setValue('upazila', '');
+  }, [selectedDistrict, form]);
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'gallery') => {
     const files = e.target.files;
@@ -354,7 +361,18 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>উপজেলা</FormLabel>
-                        <FormControl><Input placeholder="উদা: কোতোয়ালী" {...field} /></FormControl>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDistrict}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="উপজেলা" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {selectedDistrict && UPAZILAS[selectedDistrict] ? (
+                              UPAZILAS[selectedDistrict].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)
+                            ) : (
+                              <SelectItem value="none" disabled>জেলা নির্বাচন করুন</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
