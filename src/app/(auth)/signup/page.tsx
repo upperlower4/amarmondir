@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
-import { sanitizeUsername } from '@/lib/utils';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -24,49 +23,34 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const cleanUsername = sanitizeUsername(username);
-      if (!cleanUsername || cleanUsername.length < 3) {
-        toast.error('ইউজারনেম কমপক্ষে ৩ অক্ষরের হতে হবে');
-        return;
-      }
+    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+    if (!cleanUsername || cleanUsername.length < 3) {
+      toast.error('ইউজারনেম কমপক্ষে ৩ অক্ষরের হতে হবে');
+      setLoading(false);
+      return;
+    }
 
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', cleanUsername)
-        .maybeSingle();
-
-      if (existingUser) {
-        toast.error('এই ইউজারনেমটি আগেই নেওয়া হয়েছে');
-        return;
-      }
-
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            username: cleanUsername,
-          },
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          username: cleanUsername,
         },
+      },
+    });
+
+    if (error) {
+      toast.error('রেজিস্ট্রেশন ব্যর্থ হয়েছে', {
+        description: String(error.message),
       });
-
-      if (error) {
-        throw error;
-      }
-
+      setLoading(false);
+    } else {
       toast.success('রেজিস্ট্রেশন সফল হয়েছে!', {
         description: 'অ্যাকাউন্ট তৈরির পর প্রোফাইল এডিট পেজ থেকে তথ্য আপডেট করতে পারবেন।',
       });
       router.push('/login');
-    } catch (error: any) {
-      toast.error('রেজিস্ট্রেশন ব্যর্থ হয়েছে', {
-        description: String(error?.message || error),
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -90,20 +74,47 @@ export default function SignupPage() {
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">সম্পূর্ণ নাম</Label>
-                <Input id="fullName" placeholder="আপনার নাম" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                <Input
+                  id="fullName"
+                  placeholder="আপনার নাম"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="username">ইউজারনেম</Label>
-                <Input id="username" placeholder="your_username" required minLength={3} value={username} onChange={(e) => setUsername(e.target.value)} />
+                <Input
+                  id="username"
+                  placeholder="your_username"
+                  required
+                  minLength={3}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
                 <p className="text-xs text-muted-foreground">a-z, 0-9 এবং underscore ব্যবহার করুন</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">ইমেইল</Label>
-                <Input id="email" type="email" placeholder="name@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">পাসওয়ার্ড</Label>
-                <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

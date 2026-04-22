@@ -8,7 +8,7 @@ export function Footer() {
           <div className="flex-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <span className="text-2xl font-bold tracking-tight text-gray-900 font-serif">
-                <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir" className="h-8 w-auto" />
+                amarmondir
               </span>
             </Link>
             <p className="text-gray-600 max-w-sm bengali-text leading-relaxed">

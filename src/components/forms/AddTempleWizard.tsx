@@ -253,22 +253,17 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   return (
     <div className="space-y-8">
       {/* Progress Stepper */}
-      <div className="flex items-center justify-center max-w-2xl mx-auto px-2">
+      <div className="flex items-center justify-between max-w-2xl mx-auto px-4">
         {[
           { id: 1, label: 'প্রাথমিক তথ্য', icon: Info },
           { id: 2, label: 'ছবি ও অবস্থান', icon: MapPin },
           { id: 3, label: 'বিস্তারিত বর্ণনা', icon: FileText },
-        ].map((s, idx) => (
-          <div key={s.id} className="flex items-center">
-            <div className="flex flex-col items-center gap-1.5">
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all ${step >= s.id ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'}`}>
-                <s.icon className="h-5 w-5 md:h-6 md:w-6" />
-              </div>
-              <span className={`text-[10px] md:text-xs font-bold bengali-text text-center max-w-[60px] md:max-w-none leading-tight ${step >= s.id ? 'text-orange-600' : 'text-gray-400'}`}>{s.label}</span>
+        ].map((s) => (
+          <div key={s.id} className="flex flex-col items-center gap-2 relative">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${step >= s.id ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'}`}>
+              <s.icon className="h-6 w-6" />
             </div>
-            {idx < 2 && (
-              <div className={`h-0.5 w-8 md:w-16 mx-1 md:mx-2 mb-4 rounded-full transition-all ${step > s.id ? 'bg-orange-400' : 'bg-gray-200'}`} />
-            )}
+            <span className={`text-xs font-bold bengali-text ${step >= s.id ? 'text-orange-600' : 'text-gray-400'}`}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -394,7 +389,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <Button type="button" onClick={nextStep} className="bg-orange-500 h-11 md:h-12 px-6 md:px-10 rounded-xl text-base md:text-lg">
+                  <Button type="button" onClick={nextStep} className="bg-orange-500 h-12 px-10 rounded-xl text-lg">
                     পরবর্তী ধাপ
                   </Button>
                 </div>
@@ -490,10 +485,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                 </div>
 
                 <div className="flex justify-between pt-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-11 md:h-12 px-5 md:px-10 rounded-xl">
+                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-12 px-10 rounded-xl">
                     পিছনে
                   </Button>
-                  <Button type="button" onClick={nextStep} className="bg-orange-500 h-11 md:h-12 px-5 md:px-10 rounded-xl">
+                  <Button type="button" onClick={nextStep} className="bg-orange-500 h-12 px-10 rounded-xl">
                     পরবর্তী ধাপ
                   </Button>
                 </div>
@@ -543,7 +538,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                 </div>
 
                 <div className="flex justify-between pt-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-11 md:h-12 px-5 md:px-10 rounded-xl">
+                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-12 px-10 rounded-xl">
                     পিছনে
                   </Button>
                   <Button type="submit" disabled={loading} className="bg-orange-600 h-12 px-12 rounded-xl text-lg flex items-center gap-2">

@@ -8,6 +8,8 @@ export interface Profile {
   bio: string | null;
   temples_added: number;
   edits_made: number;
+  photos_added?: number;
+  contribution_score?: number;
   badge: BadgeType;
   is_admin: boolean;
   created_at: string;
@@ -51,7 +53,7 @@ export interface TempleContributor {
   id: string;
   temple_id: string;
   profile_id: string;
-  contribution_type: 'original' | 'edit';
+  contribution_type: 'original' | 'edit' | 'photo';
   created_at: string;
   profile?: Profile;
 }

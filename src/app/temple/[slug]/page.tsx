@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   MapPin,
   Clock,
@@ -20,74 +21,61 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { getDivisionColor } from '@/lib/utils';
 import Link from 'next/link';
-import { TempleTabs } from '@/components/temple/TempleTabs';
-import { EditableField } from '@/components/temple/EditableField';
-
-export const dynamic = 'force-dynamic';
 
 async function getTempleData(slug: string) {
-  const decodedSlug = decodeURIComponent(slug);
-  
-  const { data: temple, error } = await supabase
+  const { data: temple } = await supabase
     .from('temples')
-    .select('*')
-    .in('slug', [slug, decodedSlug])
+    .select('*, profiles(username, avatar_url)')
+    .eq('slug', slug)
     .eq('status', 'approved')
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error fetching temple:", error);
-  }
+    .single();
 
   if (!temple) return null;
 
   const { data: photos } = await supabase
     .from('temple_photos')
-.select('*')
-    .eq('temple_id', temple.id)
-    .order('created_at', { ascending: false });
+    .select('*')
+    .eq('temple_id', temple.id);
 
   const { data: contributors } = await supabase
     .from('temple_contributors')
-.select('*, profiles(username, full_name, avatar_url, badge)')
-    .eq('temple_id', temple.id)
-    .order('created_at', { ascending: false });
+    .select('*, profiles(username, full_name, avatar_url, badge)')
+    .eq('temple_id', temple.id);
 
   const { data: festivals } = await supabase
     .from('temple_festivals')
-.select('*')
-    .eq('temple_id', temple.id)
-    .order('created_at', { ascending: false });
+    .select('*')
+    .eq('temple_id', temple.id);
 
   return { temple, photos, contributors, festivals };
 }
 
-export default async function TemplePage({ params, searchParams }: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { slug } = await params;
-  const sParams = await searchParams;
-  const isEditMode = sParams.edit === 'true';
+function renderArticleContent(article?: string | null) {
+  if (!article) return null;
 
+  return article
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph, index) => (
+      <p key={index} className="mb-4 whitespace-pre-line">
+        {paragraph}
+      </p>
+    ));
+}
+
+export default async function TemplePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const data = await getTempleData(slug);
 
   if (!data) notFound();
 
   const { temple, photos, contributors, festivals } = data;
-  const safeContributors = (contributors || []).filter((cont: any) => cont?.profiles?.username);
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#fcfaf7] relative">
-        {isEditMode && (
-          <div className="bg-orange-100 border-b border-orange-200 p-3 sticky top-16 z-40 shadow-sm text-center">
-            <p className="text-orange-800 font-bold mb-1">এডিট মোড চালু আছে</p>
-            <p className="text-sm text-orange-700 bengali-text mb-3">যে তথ্যটি পরিবর্তন করতে চান, তার পাশের পেন্সিল আইকনে ক্লিক করে আপডেট দিন</p>
-            <Button asChild size="sm" variant="default" className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm">
-              <Link href={`/temple/${slug}`} scroll={false}>এডিট মোড বন্ধ করুন</Link>
-            </Button>
-          </div>
-        )}
+      <main className="flex-1 bg-[#fcfaf7]">
         <div className="container mx-auto px-4 md:px-8 mt-6 md:mt-10">
           <div className="relative aspect-video w-full rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl shadow-orange-100/50 border border-orange-50 bg-gray-100">
             <Image
@@ -109,28 +97,24 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
               </Badge>
             </div>
 
-            <h1 className="mb-3 break-words text-3xl font-bold leading-tight text-gray-900 font-serif md:text-5xl lg:text-6xl">{temple.title}</h1>
-            <p className="text-lg text-gray-500 italic md:text-2xl mb-6 md:mb-8 tracking-wide">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-3 font-serif leading-tight">{temple.title}</h1>
+            <p className="text-xl text-gray-500 italic md:text-2xl mb-8 tracking-wide">
               {temple.english_name}
             </p>
 
-            <div className="flex flex-wrap items-stretch gap-4 md:gap-6 text-gray-600 text-sm md:text-base bg-white p-4 md:p-5 rounded-2xl w-full md:w-fit shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="p-2 bg-orange-50 rounded-xl shrink-0">
+            <div className="flex flex-wrap items-center gap-6 text-gray-600 text-sm md:text-base bg-white p-5 rounded-2xl w-fit shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-xl">
                   <MapPin className="h-5 w-5 text-orange-600" />
                 </div>
-                <EditableField editMode={isEditMode} templeId={temple.id} field="address" label="ঠিকানা" currentValue={temple.address || ''}>
-                  <span>{temple.address}</span>
-                </EditableField>
+                <span>{temple.address}</span>
               </div>
               {temple.open_hours && (
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <div className="p-2 bg-orange-50 rounded-xl shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-50 rounded-xl">
                     <Clock className="h-5 w-5 text-orange-600" />
                   </div>
-                  <EditableField editMode={isEditMode} templeId={temple.id} field="open_hours" label="খোলার সময়" currentValue={temple.open_hours || ''}>
-                    <span>{temple.open_hours}</span>
-                  </EditableField>
+                  <span>{temple.open_hours}</span>
                 </div>
               )}
             </div>
@@ -167,13 +151,54 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                 </section>
               )}
 
-              <TempleTabs 
-                editMode={isEditMode}
-                templeId={temple.id}
-                shortBio={temple.short_bio} 
-                articleContent={temple.article_content} 
-                templeSlug={temple.slug} 
-              />
+              <section className="bg-white p-8 rounded-[2rem] shadow-sm border">
+                <Tabs defaultValue="about" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-8 bg-orange-50/50 p-1 h-14 rounded-xl">
+                    <TabsTrigger value="about" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                      সংক্ষিপ্ত বর্ণনা
+                    </TabsTrigger>
+                    <TabsTrigger value="article" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-lg">
+                      বিস্তারিত খবর/ইতিহাস
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="about" className="mt-0">
+                    <div className="prose prose-orange max-w-none bengali-text leading-relaxed text-lg text-gray-700">
+                      {temple.short_bio ? (
+                        <p>{temple.short_bio}</p>
+                      ) : (
+                        <p className="italic text-gray-400">এই মন্দিরের কোন বর্ণনা এখনো যুক্ত করা হয়নি।</p>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="article" className="mt-0">
+                    <div className="prose prose-orange max-w-none bengali-text leading-loose text-lg text-gray-700">
+                      {temple.article_content ? (
+                        <div>{renderArticleContent(temple.article_content)}</div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500">বিস্তারিত ইতিহাস বা নিবন্ধ এখনো যোগ করা হয়নি।</p>
+                          <Button variant="outline" className="mt-4 border-orange-200 text-orange-600">
+                            নিবন্ধ যোগ করুন
+                          </Button>
+                        </div>
+                      )}
+                      
+                      <div className="mt-12 flex flex-col md:flex-row items-center justify-between p-6 md:p-8 bg-orange-50 rounded-3xl border border-orange-100">
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-1 text-xl">আপনার তোলা ছবি আছে?</h4>
+                          <p className="text-gray-600 text-sm bengali-text">মন্দিরের যেকোনো নতুন ছবি বা গ্যালারি আপডেট করতে পারেন।</p>
+                        </div>
+                        <Button className="mt-4 md:mt-0 bg-white hover:bg-gray-50 text-orange-600 border border-orange-200 rounded-xl h-12 px-8 flex items-center gap-2 font-bold shadow-sm">
+                           <Edit2 className="h-4 w-4" /> ছবি আপলোড করুন
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </section>
 
               {festivals && festivals.length > 0 && (
                 <section>
@@ -206,31 +231,27 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                 </CardHeader>
 
                 <CardContent className="space-y-6 pt-8">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <Sparkles className="h-5 w-5 text-orange-500" />
                     </div>
-                    <EditableField editMode={isEditMode} templeId={temple.id} field="deity" label="উপাস্য দেবতা" currentValue={temple.deity || ''}>
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-0.5">উপাস্য দেবতা</p>
-                        <p className="font-semibold">{temple.deity || 'তথ্য নেই'}</p>
-                      </div>
-                    </EditableField>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">উপাস্য দেবতা</p>
+                      <p className="font-semibold">{temple.deity || 'তথ্য নেই'}</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <History className="h-5 w-5 text-orange-500" />
                     </div>
-                    <EditableField editMode={isEditMode} templeId={temple.id} field="established_year" label="প্রতিষ্ঠাকাল" currentValue={temple.established_year || ''}>
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-0.5">প্রতিষ্ঠাকাল</p>
-                        <p className="font-semibold">{temple.established_year || 'অজানা'}</p>
-                      </div>
-                    </EditableField>
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">প্রতিষ্ঠাকাল</p>
+                      <p className="font-semibold">{temple.established_year || 'অজানা'}</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                       <MapIcon className="h-5 w-5 text-orange-500" />
                     </div>
@@ -261,11 +282,8 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                     <Button
                       variant="outline"
                       className="w-full h-12 rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 flex items-center gap-2"
-                      asChild
                     >
-                      <Link href={`/temple/${temple.slug}?edit=true`} scroll={false}>
-                        <Edit2 className="h-4 w-4" /> তথ্য আপডেট করুন
-                      </Link>
+                      <Edit2 className="h-4 w-4" /> তথ্য আপডেট করুন
                     </Button>
                   </div>
                 </CardContent>
@@ -280,8 +298,8 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {(safeContributors.length ?? 0) > 0 ? (
-                    safeContributors.map((cont: any) => (
+                  {(contributors?.length ?? 0) > 0 ? (
+                    contributors?.map((cont: any) => (
                       <Link
                         key={cont.id}
                         href={`/profile/${cont.profiles.username}`}

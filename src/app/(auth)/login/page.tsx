@@ -21,25 +21,20 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      toast.error('লগ ইন ব্যর্থ হয়েছে', {
+        description: String(error.message)
       });
-
-      if (error) {
-        throw error;
-      }
-
+      setLoading(false);
+    } else {
       toast.success('সফলভাবে লগ ইন হয়েছে');
       router.push('/');
       router.refresh();
-    } catch (error: any) {
-      toast.error('লগ ইন ব্যর্থ হয়েছে', {
-        description: String(error?.message || error),
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -63,13 +58,26 @@ export default function LoginPage() {
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="email">ইমেইল</Label>
-                <Input id="email" type="email" placeholder="name@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">পাসওয়ার্ড</Label>
                 </div>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

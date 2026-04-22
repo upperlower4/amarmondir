@@ -3,94 +3,64 @@ import { Footer } from '@/components/Footer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Sparkles } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { getLeaderboardProfiles } from '@/lib/contribution';
 
 export const dynamic = 'force-dynamic';
 
-async function getLeaders() {
-  const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, avatar_url, badge, temples_added, edits_made');
-  if (!profiles) return [];
-
-  const { data: contributors } = await supabase.from('temple_contributors').select('profile_id, contribution_type, temples(status)');
-  const { data: edits } = await supabase.from('temple_edits').select('profile_id, status').eq('status', 'approved');
-
-  return profiles
-    .map((profile) => {
-      const dynamicTemplesAdded = (contributors || []).filter(
-        (c: any) => c.profile_id === profile.id && c.contribution_type === 'original' && c.temples?.status === 'approved'
-      ).length;
-      const dynamicEditsMade = (edits || []).filter((e: any) => e.profile_id === profile.id).length;
-
-      return {
-        ...profile,
-        temples_added: Math.max(profile.temples_added || 0, dynamicTemplesAdded),
-        edits_made: Math.max(profile.edits_made || 0, dynamicEditsMade),
-      };
-    })
-    .sort((a, b) => {
-      if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
-      return b.edits_made - a.edits_made;
-    });
-}
-
 export default async function LeaderboardPage() {
-  const leaders = await getLeaders();
-  const [first, second, third, ...rest] = leaders;
+  const leaders = (await getLeaderboardProfiles()).slice(0, 50);
+  const topThree = leaders.slice(0, 3);
+  const rest = leaders.slice(3);
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#fcfaf7]">
-        <div className="container mx-auto px-4 py-10 md:py-16">
-          <div className="text-center mb-10 md:mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6 border border-orange-200">
+      <main className="flex-1 bg-gray-50/50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6">
               <Trophy className="h-4 w-4" />
-              <span>কমিউনিটির সেরা অবদানকারীরা</span>
+              <span>সেরা অবদানকারীদের তালিকা</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight font-serif mb-4">লিডারবোর্ড</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto bengali-text text-lg">
-              যারা নতুন মন্দির যুক্ত করেন এবং মানসম্মত এডিট অনুমোদন পান, তারাই এখানে উঠে আসেন।
-            </p>
+            <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4 text-balance">লিডারবোর্ড</h1>
+            <p className="text-gray-500 bengali-text">approved contribution আর penalty point logic অনুযায়ী rank দেখানো হচ্ছে।</p>
           </div>
 
-          <div className="flex flex-col md:grid md:grid-cols-3 gap-6 md:items-end max-w-5xl mx-auto mb-12 md:mb-16">
-            {first && <div className="md:order-2">{<LeaderPodium user={first} rank={1} color="text-orange-700" bgColor="bg-orange-200" />}</div>}
-            {second && <div className="md:order-1">{<LeaderPodium user={second} rank={2} color="text-gray-700" bgColor="bg-gray-200" />}</div>}
-            {third && <div className="md:order-3">{<LeaderPodium user={third} rank={3} color="text-amber-700" bgColor="bg-amber-200" />}</div>}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 max-w-5xl mx-auto items-end">
+            {topThree[1] && <LeaderPodium user={topThree[1]} rank={2} color="text-slate-400" bgColor="bg-slate-50" />}
+            {topThree[0] && <LeaderPodium user={topThree[0]} rank={1} color="text-orange-500" bgColor="bg-orange-50" />}
+            {topThree[2] && <LeaderPodium user={topThree[2]} rank={3} color="text-amber-700" bgColor="bg-amber-50" />}
           </div>
 
-          <div className="bg-white rounded-[2rem] shadow-xl shadow-orange-100/30 p-4 md:p-6 border border-orange-50">
-            <div className="mb-5 flex items-center gap-2">
-              <Medal className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-bold font-serif">অন্য সব অবদানকারী</h2>
-            </div>
-
-            <div className="space-y-3">
-              {rest.map((user, index) => (
-                <Link key={user.id} href={`/profile/${user.username}`} className="flex items-center gap-4 bg-white p-4 rounded-2xl border hover:shadow-md transition-shadow group">
-                  <div className="w-8 text-center font-bold text-gray-400 shrink-0">{index + 4}</div>
-                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                    <AvatarImage src={user.avatar_url || ''} />
-                    <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <p className="font-bold truncate group-hover:text-orange-600 transition-colors">{user.full_name || user.username}</p>
-                    <p className="text-xs text-gray-400 bengali-text">{user.badge}</p>
+          <div className="max-w-4xl mx-auto space-y-3">
+            {rest.map((user, index) => (
+              <Link key={user.id} href={`/profile/${user.username}`} className="flex items-center gap-4 bg-white p-4 rounded-2xl border hover:shadow-md transition-shadow group">
+                <div className="w-8 text-center font-bold text-gray-400 shrink-0">{index + 4}</div>
+                <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                  <AvatarImage src={user.avatar_url || ''} />
+                  <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className="font-bold truncate group-hover:text-orange-600 transition-colors">{user.full_name || user.username}</p>
+                  <p className="text-xs text-gray-400 bengali-text">{user.badge}</p>
+                </div>
+                <div className="flex items-center gap-4 sm:gap-8 text-sm shrink-0">
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-green-600">{user.score}</span>
+                    <span className="text-[10px] text-gray-400 font-bold">পয়েন্ট</span>
                   </div>
-                  <div className="flex items-center gap-4 sm:gap-8 text-sm shrink-0">
-                    <div className="flex flex-col items-center">
-                      <span className="font-bold text-orange-600">{user.temples_added}</span>
-                      <span className="text-[10px] text-gray-400 font-bold">মন্দির</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="font-bold text-blue-600">{user.edits_made}</span>
-                      <span className="text-[10px] text-gray-400 font-bold">এডিট</span>
-                    </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-orange-600">{user.temples_added}</span>
+                    <span className="text-[10px] text-gray-400 font-bold">মন্দির</span>
                   </div>
-                </Link>
-              ))}
-            </div>
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold text-blue-600">{user.edits_made}</span>
+                    <span className="text-[10px] text-gray-400 font-bold">এডিট</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </main>
@@ -119,11 +89,13 @@ function LeaderPodium({ user, rank, color, bgColor }: { user: any; rank: number;
 
       <div className="text-center">
         <h3 className="font-bold text-xl mb-1 group-hover:text-orange-600 transition-colors">{user.full_name || user.username}</h3>
-        <Badge variant={isFirst ? 'default' : 'secondary'} className={isFirst ? 'bg-orange-500 hover:bg-orange-500' : ''}>
-          {user.badge}
-        </Badge>
+        <Badge variant={isFirst ? 'default' : 'secondary'} className={isFirst ? 'bg-orange-500 hover:bg-orange-500' : ''}>{user.badge}</Badge>
 
         <div className="mt-4 flex gap-4 justify-center">
+          <div className="flex flex-col items-center bg-white px-4 py-2 rounded-xl border shadow-sm">
+            <span className="text-lg font-bold text-green-600 leading-none">{user.score}</span>
+            <span className="text-[10px] uppercase text-gray-400 font-bold mt-1">পয়েন্ট</span>
+          </div>
           <div className="flex flex-col items-center bg-white px-4 py-2 rounded-xl border shadow-sm">
             <span className="text-lg font-bold text-orange-600 leading-none">{user.temples_added}</span>
             <span className="text-[10px] uppercase text-gray-400 font-bold mt-1">মন্দির</span>

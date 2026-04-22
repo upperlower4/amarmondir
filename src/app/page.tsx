@@ -1,238 +1,165 @@
-import Image from 'next/image';
-import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { TempleCard } from '@/components/TempleCard';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { supabase, isConfigured } from '@/lib/supabase';
-import { MapPin, Plus, Search, Users, BookOpen, Star } from 'lucide-react';
-import { DIVISIONS, TEMPLE_TYPES } from '@/lib/constants';
-import type { Temple } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { TempleCard } from '@/components/TempleCard';
+import { safeJsonStringify } from '@/lib/utils';
+import { Search, MapPin, Sparkles, Navigation, Users } from 'lucide-react';
+import Link from 'next/link';
+import { DIVISIONS } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic';
-
-async function getHomeData() {
-  if (!isConfigured) {
-    return { featuredTemples: [], recentTemples: [], stats: { total: 0, divisions: 0, contributors: 0 } };
+async function getFeaturedTemples() {
+  try {
+    const { data, error } = await supabase
+      .from('temples')
+      .select('*')
+      .eq('status', 'approved')
+      .limit(4)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching featured temples:', safeJsonStringify(error));
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Fetch error:', safeJsonStringify(err));
+    return [];
   }
-
-  const [
-    { data: featuredTemples },
-    { data: recentTemples },
-    { count: totalTemples },
-    { count: totalContributors },
-  ] = await Promise.all([
-    supabase
-      .from('temples')
-      .select('*')
-      .eq('status', 'approved')
-      .not('slug', 'is', null)
-      .eq('is_featured', true)
-      .is('deleted_at', null)
-      .order('updated_at', { ascending: false })
-      .limit(4),
-    supabase
-      .from('temples')
-      .select('*')
-      .eq('status', 'approved')
-      .not('slug', 'is', null)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(8),
-    supabase
-      .from('temples')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .is('deleted_at', null),
-    supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true }),
-  ]);
-
-  return {
-    featuredTemples: (featuredTemples || []) as Temple[],
-    recentTemples: (recentTemples || []) as Temple[],
-    stats: {
-      total: totalTemples || 0,
-      divisions: 8,
-      contributors: totalContributors || 0,
-    },
-  };
 }
 
 export default async function HomePage() {
-  const { featuredTemples, recentTemples, stats } = await getHomeData();
-
-  const displayTemples = featuredTemples.length > 0 ? featuredTemples : recentTemples.slice(0, 4);
+  const temples = await getFeaturedTemples();
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-[#fcfaf7]">
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="relative py-20 lg:py-32 overflow-hidden">
+          <div className="absolute inset-0 bg-orange-50/50 -z-10" />
+          <div className="absolute top-0 right-0 w-1/3 h-full bg-orange-100/30 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+          
+          <div className="container mx-auto px-4 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-8 border border-orange-200">
+              <Sparkles className="h-4 w-4" />
+              <span>বাংলাদেশের ১০০০+ মন্দিরের ডিরেক্টরি</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 font-serif leading-[1.1]">
+              এবার বিশ্ব দেখবে <br />
+              <span className="text-orange-500">আমার মন্দির</span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 bengali-text">
+              আমাদের ঐতিহ্য ও সংস্কৃতির অবিচ্ছেদ্য অংশ বাংলাদেশের মন্দিরগুলো। এখন সহজেই খুঁজে দেখুন এবং আপনার এলাকার মন্দিরটি যুক্ত করুন।
+            </p>
 
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-[#fcfaf7] to-amber-50 border-b">
-          <div className="container mx-auto px-4 py-16 md:py-24">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6 border border-orange-200">
-                <Star className="h-4 w-4" />
-                <span>বাংলাদেশের মন্দির ডিরেক্টরি</span>
-              </div>
-              <div className="flex justify-center mb-6">
-                <Image
-                  src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825110/Logo_pmyblv.png"
-                  alt="Amar Mondir Logo"
-                  width={128}
-                  height={128}
-                  className="h-24 w-auto md:h-32"
-                  priority
+            <form action="/directory" method="GET" className="max-w-2xl mx-auto bg-white p-2 rounded-2xl shadow-2xl shadow-orange-100 flex flex-col md:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input 
+                  name="q"
+                  placeholder="মন্দিরের নাম বা এলাকা দিয়ে খুঁজুন..." 
+                  className="pl-10 h-12 border-none focus-visible:ring-0 text-lg"
                 />
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 font-serif leading-[1.1]">
-                এবার বিশ্ব দেখবে <br />
-                <span className="text-orange-500">আমার মন্দির</span>
-              </h1>
-              <p className="text-lg md:text-xl text-gray-600 bengali-text mb-8 leading-relaxed max-w-2xl mx-auto">
-                বাংলাদেশের সকল হিন্দু মন্দির ও তীর্থস্থানের সমৃদ্ধ ডিরেক্টরি। আপনার এলাকার মন্দির খুঁজুন এবং তথ্য যোগ করে সংরক্ষণে অবদান রাখুন।
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white gap-2 px-8">
-                  <Link href="/directory">
-                    <Search className="h-5 w-5" />
-                    মন্দির খুঁজুন
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="gap-2 border-orange-200 hover:bg-orange-50 px-8">
-                  <Link href="/add-temple">
-                    <Plus className="h-5 w-5" />
-                    মন্দির যোগ করুন
-                  </Link>
-                </Button>
-              </div>
-            </div>
+              <Button type="submit" className="h-12 px-8 bg-orange-500 hover:bg-orange-600 text-lg rounded-xl">
+                খুঁজুন
+              </Button>
+            </form>
           </div>
         </section>
 
-        {/* Stats */}
-        <section className="border-b bg-white">
-          <div className="container mx-auto px-4 py-10">
-            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-3 text-center sm:grid-cols-3 sm:gap-4">
-              <div className="p-4">
-                <p className="text-3xl md:text-4xl font-bold font-serif text-orange-600">{stats.total}+</p>
-                <p className="text-sm text-gray-500 mt-1 bengali-text">নিবন্ধিত মন্দির</p>
-              </div>
-              <div className="p-4 border-x">
-                <p className="text-3xl md:text-4xl font-bold font-serif text-orange-600">{stats.divisions}</p>
-                <p className="text-sm text-gray-500 mt-1 bengali-text">বিভাগ জুড়ে</p>
-              </div>
-              <div className="p-4">
-                <p className="text-3xl md:text-4xl font-bold font-serif text-orange-600">{stats.contributors}+</p>
-                <p className="text-sm text-gray-500 mt-1 bengali-text">অবদানকারী</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Featured / Recent Temples */}
-        {displayTemples.length > 0 && (
-          <section className="py-12 md:py-16">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-bold font-serif text-gray-900">
-                    {featuredTemples.length > 0 ? 'বিশেষ মন্দির' : 'সাম্প্রতিক মন্দির'}
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1 bengali-text">
-                    {featuredTemples.length > 0 ? 'সম্পাদক বাছাইকৃত উল্লেখযোগ্য মন্দির' : 'সম্প্রতি যোগ করা মন্দিরসমূহ'}
-                  </p>
-                </div>
-                <Button asChild variant="ghost" className="text-orange-600 hover:text-orange-700 hover:bg-orange-50">
-                  <Link href="/directory">সব দেখুন →</Link>
-                </Button>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {displayTemples.map((temple) => (
-                  <TempleCard key={temple.id} temple={temple} />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Browse by Division */}
-        <section className="py-12 md:py-16 bg-white border-y">
+        {/* Categories / Divisions */}
+        <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="mb-8 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold font-serif text-gray-900 mb-2">বিভাগ অনুযায়ী খুঁজুন</h2>
-              <p className="text-gray-500 bengali-text text-sm">আপনার বিভাগ বেছে নিন</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold mb-10 font-serif">বিভাগ অনুযায়ী ব্রাউজ করুন</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
               {DIVISIONS.map((division) => (
-                <Link
+                <Link 
                   key={division}
-                  href={`/division/${encodeURIComponent(division)}`}
-                  className="flex items-center gap-2 p-3 rounded-xl border bg-[#fcfaf7] hover:bg-orange-50 hover:border-orange-200 transition-colors group"
+                  href={`/directory?division=${division}`}
+                  className="group flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-sm border hover:border-orange-200 hover:shadow-orange-100/50 hover:shadow-md transition-all"
                 >
-                  <MapPin className="h-4 w-4 text-orange-400 group-hover:text-orange-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-orange-700 truncate">{division}</span>
+                  <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                    <MapPin className="h-6 w-6" />
+                  </div>
+                  <span className="font-bold text-center">{division}</span>
                 </Link>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Browse by Type */}
-        <section className="py-12 md:py-16">
+        {/* Featured Temples */}
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
-            <div className="mb-8 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold font-serif text-gray-900 mb-2">ধরন অনুযায়ী খুঁজুন</h2>
-              <p className="text-gray-500 bengali-text text-sm">মন্দিরের ধরন বেছে নিন</p>
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="text-3xl font-bold font-serif">সেরা মন্দিরগুলো</h2>
+                <p className="text-gray-500 bengali-text">সম্প্রতি যুক্ত হওয়া এবং ভেরিফাইড চমৎকার মন্দিরগুলো</p>
+              </div>
+              <Link href="/directory" className="text-orange-600 font-semibold hover:underline">সবগুলো দেখুন</Link>
             </div>
-            <div className="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
-              {TEMPLE_TYPES.map((type) => (
-                <Link key={type} href={`/type/${encodeURIComponent(type)}`}>
-                  <Badge
-                    variant="outline"
-                    className="px-4 py-2 text-sm cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors"
-                  >
-                    {type}
-                  </Badge>
-                </Link>
-              ))}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {temples.length > 0 ? (
+                temples.map((temple: any) => (
+                  <TempleCard key={temple.id} temple={temple} />
+                ))
+              ) : (
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="h-[400px] bg-gray-50 rounded-2xl animate-pulse" />
+                ))
+              )}
             </div>
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-12 md:py-16 bg-gradient-to-br from-orange-500 to-amber-500 text-white">
-          <div className="container mx-auto px-4 text-center max-w-2xl">
-            <div className="flex justify-center mb-4">
-              <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center">
-                <BookOpen className="h-7 w-7" />
+        {/* How it works */}
+        <section className="py-20 bg-orange-500 text-white overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-20 bg-white -translate-y-10 rounded-[100%]" />
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl md:text-4xl font-bold font-serif mb-2">আমাদের সাথে যুক্ত হোন</h2>
+              <p className="text-orange-50 opacity-90 text-sm md:text-lg bengali-text">মাত্র ৩টি ধাপে যুক্ত করুন আপনার এলাকার মন্দির</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
+                  ১
+                </div>
+                <h3 className="text-xl font-bold font-serif">বেসিক তথ্য দিন</h3>
+                <p className="text-orange-50/80 bengali-text">মন্দিরের নাম, ধরন এবং অবস্থান নির্দিষ্ট করুন।</p>
+              </div>
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
+                  ২
+                </div>
+                <h3 className="text-xl font-bold font-serif">ছবি আপলোড করুন</h3>
+                <p className="text-orange-50/80 bengali-text">মন্দিরের সুন্দর ছবি এবং ম্যাপ লোকেশন যুক্ত করুন।</p>
+              </div>
+              <div className="hidden md:flex flex-col items-center text-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30">
+                  ৩
+                </div>
+                <h3 className="text-xl font-bold font-serif">ইতিহাস লিখুন</h3>
+                <p className="text-orange-50/80 bengali-text">মন্দিরের ইতিহাস, উৎসব এবং গুরুত্বপূর্ণ তথ্য দিন।</p>
               </div>
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold font-serif mb-3">আপনার এলাকার মন্দির যোগ করুন</h2>
-            <p className="text-orange-100 bengali-text mb-8 leading-relaxed">
-              আমাদের ঐতিহ্য ও সংস্কৃতিকে সংরক্ষণ করতে সাহায্য করুন। নতুন মন্দির যোগ করে অথবা তথ্য সংশোধন করে অবদান রাখুন।
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 gap-2 font-bold">
+
+            <div className="mt-4 text-center">
+              <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 text-xl h-16 px-12 rounded-2xl shadow-xl">
                 <Link href="/add-temple">
-                  <Plus className="h-5 w-5" />
                   মন্দির যোগ করুন
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 gap-2">
-                <Link href="/leaderboard">
-                  <Users className="h-5 w-5" />
-                  অবদানকারী তালিকা
-                </Link>
-              </Button>
             </div>
           </div>
         </section>
-
       </main>
       <Footer />
     </>
