@@ -3,71 +3,66 @@ import { Footer } from '@/components/Footer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Trophy, MapPin, Edit3, Calendar, ShieldCheck, Settings } from 'lucide-react';
-import { supabase, isConfigured } from '@/lib/supabase';
+import { Trophy, MapPin, Edit3, Calendar, ShieldCheck } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { TempleCard } from '@/components/TempleCard';
-import Link from 'next/link';
-
 import { ProfileActions } from './ProfileActions';
+import { formatJoinedDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 async function getProfileData(username: string) {
-  if (!isConfigured) return null;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single();
-
+  const { data: profile } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
   if (!profile) return null;
 
   const { data: contributedTemples } = await supabase
     .from('temple_contributors')
-    .select('*, temples(*)')
+    .select('contribution_type, temples(*)')
     .eq('profile_id', profile.id);
 
-  // Dynamically count contributions instead of relying only on the trigger to update profile.temples_added
-  const templeCount = contributedTemples?.filter(c => c.contribution_type === 'original').length || 0;
-  
-  const { count: editCount } = await supabase
+  const approvedTemples = (contributedTemples || [])
+    .filter((c: any) => c.temples && c.temples.status === 'approved')
+    .map((c: any) => c.temples);
+
+  const templeCount = (contributedTemples || []).filter((c: any) => c.contribution_type === 'original' && c.temples?.status === 'approved').length;
+
+  const { data: approvedEdits, count: editCount } = await supabase
     .from('temple_edits')
-    .select('*', { count: 'exact', head: true })
-    .eq('profile_id', profile.id);
+    .select('profile_id', { count: 'exact' })
+    .eq('profile_id', profile.id)
+    .eq('status', 'approved');
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, temples_added, edits_made')
-    .order('created_at', { ascending: true });
+  const { data: profiles } = await supabase.from('profiles').select('id, username, temples_added, edits_made').order('created_at', { ascending: true });
+  const { data: allContributors } = await supabase.from('temple_contributors').select('profile_id, contribution_type, temples(status)');
+  const { data: allEdits } = await supabase.from('temple_edits').select('profile_id, status').eq('status', 'approved');
 
-  const { data: allContributors } = await supabase.from('temple_contributors').select('profile_id, contribution_type');
-  const { data: allEdits } = await supabase.from('temple_edits').select('profile_id');
-
-  const formattedProfiles = (profiles || []).map(p => {
-    const pTemples = allContributors?.filter(c => c.profile_id === p.id && c.contribution_type === 'original').length || 0;
-    const pEdits = allEdits?.filter(e => e.profile_id === p.id).length || 0;
-    return {
-      ...p,
-      temples_added: Math.max(p.temples_added || 0, pTemples),
-      edits_made: Math.max(p.edits_made || 0, pEdits)
-    };
-  }).sort((a, b) => {
-    if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
-    return b.edits_made - a.edits_made;
-  });
+  const formattedProfiles = (profiles || [])
+    .map((p) => {
+      const pTemples = (allContributors || []).filter(
+        (c: any) => c.profile_id === p.id && c.contribution_type === 'original' && c.temples?.status === 'approved'
+      ).length;
+      const pEdits = (allEdits || []).filter((e: any) => e.profile_id === p.id).length;
+      return {
+        ...p,
+        temples_added: Math.max(p.temples_added || 0, pTemples),
+        edits_made: Math.max(p.edits_made || 0, pEdits),
+      };
+    })
+    .sort((a, b) => {
+      if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
+      return b.edits_made - a.edits_made;
+    });
 
   const leaderboardRank = formattedProfiles.findIndex((leader) => leader.id === profile.id) + 1;
 
-  // Use dynamic counts for the profile display
   const dynamicProfile = {
     ...profile,
-    temples_added: Math.max(profile.temples_added, templeCount), // Show higher of trigger or dynamic count
-    edits_made: Math.max(profile.edits_made, editCount || 0)
+    temples_added: Math.max(profile.temples_added || 0, templeCount),
+    edits_made: Math.max(profile.edits_made || 0, editCount || approvedEdits?.length || 0),
   };
 
-  return { profile: dynamicProfile, contributedTemples, leaderboardRank: leaderboardRank || null };
+  return { profile: dynamicProfile, contributedTemples: approvedTemples, leaderboardRank: leaderboardRank || null };
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
@@ -76,7 +71,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   if (!data) notFound();
 
   const { profile, contributedTemples, leaderboardRank } = data;
-  const temples = contributedTemples?.map((c) => c.temples).filter(Boolean) || [];
+  const joinedDate = formatJoinedDate(profile.created_at);
 
   return (
     <>
@@ -113,7 +108,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-2">
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <Calendar className="h-4 w-4" />
-                    <span>joined {new Date(profile.created_at).toLocaleDateString()}</span>
+                    <span>{joinedDate ? `joined ${joinedDate}` : 'joined date unavailable'}</span>
                   </div>
                   {profile.is_admin && (
                     <div className="flex items-center gap-2 text-blue-600 text-sm font-bold">
@@ -141,9 +136,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <div className="container mx-auto px-4 py-10 md:py-12">
           <h2 className="text-2xl font-bold mb-8 font-serif">অবদানকৃত মন্দিরসমূহ</h2>
 
-          {temples.length > 0 ? (
+          {contributedTemples.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {temples.map((temple: any) => (
+              {contributedTemples.map((temple: any) => (
                 <TempleCard key={temple.id} temple={temple} />
               ))}
             </div>

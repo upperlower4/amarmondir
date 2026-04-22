@@ -10,8 +10,6 @@ export interface Profile {
   edits_made: number;
   badge: BadgeType;
   is_admin: boolean;
-  is_suspended?: boolean;
-  suspension_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,10 +35,6 @@ export interface Temple {
   article_content: string | null;
   status: 'pending' | 'approved' | 'rejected';
   created_by: string;
-  is_featured?: boolean;
-  deleted_at?: string | null;
-  deleted_by?: string | null;
-  moderation_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,10 +44,6 @@ export interface TemplePhoto {
   temple_id: string;
   url: string;
   photo_type: 'cover' | 'gallery';
-  caption?: string | null;
-  credit_name?: string | null;
-  profile_id?: string | null;
-  status?: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }
 
@@ -61,7 +51,7 @@ export interface TempleContributor {
   id: string;
   temple_id: string;
   profile_id: string;
-  contribution_type: 'original' | 'edit' | 'photo';
+  contribution_type: 'original' | 'edit';
   created_at: string;
   profile?: Profile;
 }
@@ -84,18 +74,8 @@ export interface EditSuggestion {
   id: string;
   temple_id: string;
   profile_id: string;
-  suggested_data: Record<string, any>;
+  suggested_data: any;
   status: 'pending' | 'approved' | 'rejected';
   moderator_note: string | null;
-  created_at: string;
-}
-
-export interface TempleReport {
-  id: string;
-  temple_id: string;
-  profile_id: string | null;
-  report_type: 'incorrect_info' | 'wrong_photo' | 'duplicate' | 'other';
-  details: string;
-  status: 'pending' | 'reviewed' | 'resolved' | 'rejected';
   created_at: string;
 }

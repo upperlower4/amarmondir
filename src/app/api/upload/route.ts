@@ -9,42 +9,19 @@ cloudinary.config({
 });
 
 const ALLOWED_TYPES = new Set(['cover', 'gallery', 'avatar']);
-const ALLOWED_FOLDERS = new Set([
-  'amarmondir/covers',
-  'amarmondir/gallery',
-  'amarmondir/avatars',
-]);
+const ALLOWED_FOLDERS = new Set(['amarmondir/covers', 'amarmondir/gallery', 'amarmondir/avatars']);
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/jpg']);
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const UPLOAD_CONFIG = {
-  cover: {
-    width: 1920,
-    crop: 'limit',
-    minKB: 80,
-    maxKB: 120,
-    quality: 74,
-  },
-  gallery: {
-    width: 1200,
-    crop: 'limit',
-    minKB: 50,
-    maxKB: 80,
-    quality: 70,
-  },
-  avatar: {
-    width: 160,
-    height: 160,
-    crop: 'fill',
-    gravity: 'face',
-    minKB: 5,
-    maxKB: 10,
-    quality: 50,
-  },
+  cover: { width: 1920, crop: 'limit', minKB: 80, maxKB: 120, quality: 74 },
+  gallery: { width: 1200, crop: 'limit', minKB: 50, maxKB: 80, quality: 70 },
+  avatar: { width: 160, height: 160, crop: 'fill', gravity: 'face', minKB: 5, maxKB: 10, quality: 50 },
 } as const;
 
 function getMimeFromDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
-  return match?.[1] || null;
+  return match?.[1]?.toLowerCase() || null;
 }
 
 function getApproxBytesFromDataUrl(dataUrl: string) {
@@ -71,23 +48,16 @@ export async function POST(req: Request) {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Supabase env missing' }, { status: 500 });
     }
 
     const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
     const {
@@ -99,18 +69,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid auth token' }, { status: 401 });
     }
 
-    let body;
-    try {
-      body = await req.json();
-    } catch (parseErr: any) {
-      console.error('Request body parse error:', parseErr.message);
-      return NextResponse.json({ error: 'Body size too large or invalid JSON' }, { status: 413 });
-    }
+    const body = await req.json();
+    const { image, folder, type } = body || {};
 
-    const { image, folder, type } = body;
-
-    if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error('Cloudinary credentials missing in server environment');
+    if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET || !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
       return NextResponse.json({ error: 'Cloudinary not configured' }, { status: 500 });
     }
 
@@ -126,9 +88,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid upload folder' }, { status: 400 });
     }
 
+    const expectedFolderByType = {
+      cover: 'amarmondir/covers',
+      gallery: 'amarmondir/gallery',
+      avatar: 'amarmondir/avatars',
+    } as const;
+
+    if (expectedFolderByType[type as keyof typeof expectedFolderByType] !== folder) {
+      return NextResponse.json({ error: 'Folder does not match upload type' }, { status: 400 });
+    }
+
     const mime = getMimeFromDataUrl(image);
-    if (!mime || !mime.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image uploads are allowed' }, { status: 400 });
+    if (!mime || !ALLOWED_MIME_TYPES.has(mime)) {
+      return NextResponse.json({ error: 'Only JPG, PNG, or WEBP image uploads are allowed' }, { status: 400 });
     }
 
     const approxBytes = getApproxBytesFromDataUrl(image);
@@ -140,7 +112,9 @@ export async function POST(req: Request) {
     let selectedQuality: number = config.quality;
     let selectedResult: any = null;
 
-    for (const quality of [config.quality, config.quality - 8, config.quality - 14, config.quality - 20].filter((value) => value > 20)) {
+    const qualityAttempts = [config.quality, config.quality - 8, config.quality - 14, config.quality - 20, config.quality - 26].filter((value) => value > 18);
+
+    for (const quality of qualityAttempts) {
       const result = await cloudinary.uploader.upload(image, {
         folder,
         transformation: buildTransformation(type, quality),
@@ -155,6 +129,10 @@ export async function POST(req: Request) {
       if (!bytes || bytes <= config.maxKB * 1024) {
         break;
       }
+    }
+
+    if (!selectedResult?.secure_url) {
+      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 
     return NextResponse.json({

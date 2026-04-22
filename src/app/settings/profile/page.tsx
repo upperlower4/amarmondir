@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { CLOUDINARY_FOLDERS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { Loader2, Save, Upload } from 'lucide-react';
-import { safeJsonStringify } from '@/lib/utils';
+import { safeJsonStringify, sanitizeUsername } from '@/lib/utils';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -29,7 +29,6 @@ function fileToBase64(file: File): Promise<string> {
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -40,11 +39,8 @@ export default function ProfileSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    let isActive = true;
 
-  useEffect(() => {
-    if (!isMounted) return;
     const loadProfile = async () => {
       const {
         data: { session },
@@ -56,13 +52,11 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      setUserId(session.user.id);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
 
+      if (!isActive) return;
+
+      setUserId(session.user.id);
       if (error || !data) {
         toast.error('প্রোফাইল লোড করা যায়নি');
       } else {
@@ -75,6 +69,10 @@ export default function ProfileSettingsPage() {
     };
 
     loadProfile();
+
+    return () => {
+      isActive = false;
+    };
   }, [router]);
 
   const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -127,37 +125,52 @@ export default function ProfileSettingsPage() {
   const handleSave = async () => {
     if (!userId) return;
 
-    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+    const cleanUsername = sanitizeUsername(username);
     if (!cleanUsername || cleanUsername.length < 3) {
       toast.error('ইউজারনেম কমপক্ষে ৩ অক্ষরের হতে হবে');
       return;
     }
 
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        username: cleanUsername,
-        full_name: fullName.trim() || null,
-        bio: bio.trim() || null,
-        avatar_url: avatarUrl || null,
-      })
-      .eq('id', userId);
 
-    if (error) {
+    try {
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .neq('id', userId)
+        .maybeSingle();
+
+      if (existingUser) {
+        toast.error('এই ইউজারনেমটি আগেই নেওয়া হয়েছে');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: cleanUsername,
+          full_name: fullName.trim() || null,
+          bio: bio.trim() || null,
+          avatar_url: avatarUrl || null,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('প্রোফাইল আপডেট হয়েছে');
+      router.push(`/profile/${cleanUsername}`);
+      router.refresh();
+    } catch (error: any) {
       toast.error('প্রোফাইল সেভ করা যায়নি', {
-        description: error.message,
+        description: error?.message || 'Unknown error',
       });
+    } finally {
       setSaving(false);
-      return;
     }
-
-    toast.success('প্রোফাইল আপডেট হয়েছে');
-    router.push(`/profile/${cleanUsername}`);
-    router.refresh();
   };
-
-  if (!isMounted) return null;
 
   return (
     <>
@@ -214,14 +227,7 @@ export default function ProfileSettingsPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="bio">বায়ো</Label>
-                    <Textarea
-                      id="bio"
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="নিজের সম্পর্কে কিছু লিখুন"
-                      className="min-h-32"
-                      maxLength={300}
-                    />
+                    <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="নিজের সম্পর্কে কিছু লিখুন" className="min-h-32" maxLength={300} />
                     <p className="text-xs text-gray-500 text-right">{bio.length}/300</p>
                   </div>
 

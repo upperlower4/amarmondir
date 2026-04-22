@@ -1,41 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
-export const isConfigured = !!(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'));
+export const isConfigured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+);
 
-let clientInstance: any = null;
-
-const getClient = () => {
-  if (!clientInstance) {
-    clientInstance = createClient(
-      supabaseUrl || 'https://placeholder.supabase.co',
-      supabaseAnonKey || 'placeholder',
-      {
-        auth: {
-          persistSession: false,
-        }
-      }
-    );
-  }
-  return clientInstance;
-};
-
-export const supabase = new Proxy({} as any, {
-  get(target, prop) {
-    const client = getClient();
-    const value = (client as any)[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  }
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
 });
 
 export const getSupabaseAdmin = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+
   if (!serviceRoleKey) {
     throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 };

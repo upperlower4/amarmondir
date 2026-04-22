@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Sidebar, Search } from 'lucide-react';
 import { safeJsonStringify } from '@/lib/utils';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES } from '@/lib/constants';
-import { supabase, isConfigured } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
 
 interface DirectoryPageProps {
   searchParams: Promise<{
@@ -19,7 +21,7 @@ interface DirectoryPageProps {
 }
 
 function sanitizeSearchTerm(value?: string) {
-  return (value || '').replace(/[,%()]/g, ' ').trim();
+  return (value || '').replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function buildDirectoryHref(
@@ -49,17 +51,19 @@ function buildDirectoryHref(
 }
 
 async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
-  if (!isConfigured) return [];
   try {
     let query = supabase
       .from('temples')
       .select('*')
-      .eq('status', 'approved');
+      .eq('status', 'approved')
+      .not('slug', 'is', null);
 
     const safeQ = sanitizeSearchTerm(params.q);
     if (safeQ) {
+      const tokens = safeQ.split(' ').filter(Boolean);
+      const strongest = tokens[0] || safeQ;
       query = query.or(
-        `title.ilike.%${safeQ}%,english_name.ilike.%${safeQ}%,district.ilike.%${safeQ}%,upazila.ilike.%${safeQ}%,address.ilike.%${safeQ}%,short_bio.ilike.%${safeQ}%,deity.ilike.%${safeQ}%`
+        `title.ilike.*${strongest}*,english_name.ilike.*${strongest}*,district.ilike.*${strongest}*,upazila.ilike.*${strongest}*,address.ilike.*${strongest}*,short_bio.ilike.*${strongest}*,deity.ilike.*${strongest}*`
       );
     }
 

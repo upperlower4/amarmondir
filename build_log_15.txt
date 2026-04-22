@@ -1,0 +1,35 @@
+ ⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+   ▲ Next.js 15.0.3
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/11) ...
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at K (/app/applet/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at y (/app/applet/.next/server/chunks/627.js:6:1263)
+    at Object.react_stack_bottom_frame (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:10313:18)
+    at renderWithHooks (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5399:19)
+    at renderElement (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5834:23)
+    at retryNode (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6765:31)
+    at renderNodeDestructive (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6715:11)
+    at renderElement (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5820:11)
+    at retryNode (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6765:31)
+    at renderNodeDestructive (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6715:11)
+Error occurred prerendering page "/500". Read more: https://nextjs.org/docs/messages/prerender-error
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at K (/app/applet/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at y (/app/applet/.next/server/chunks/627.js:6:1263)
+    at Object.react_stack_bottom_frame (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:10313:18)
+    at renderWithHooks (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5399:19)
+    at renderElement (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5834:23)
+    at retryNode (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6765:31)
+    at renderNodeDestructive (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6715:11)
+    at renderElement (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5820:11)
+    at retryNode (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6765:31)
+    at renderNodeDestructive (/app/applet/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6715:11)
+Export encountered an error on /_error: /500, exiting the build.
+ ⨯ Static worker exited with code: 1 and signal: null
