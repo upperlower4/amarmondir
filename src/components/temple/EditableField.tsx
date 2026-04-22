@@ -50,6 +50,7 @@ export function EditableField({ templeId, field, label, currentValue, children, 
       });
 
       const data = await res.json();
+      console.log('Save API Response:', data); // Debugging line
       if (!res.ok) throw new Error(data.error || 'আপডেট করতে সমস্যা হয়েছে');
 
       setOptimisticValue(value);
