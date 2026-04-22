@@ -79,10 +79,13 @@ export default async function HomePage() {
                 <span>বাংলাদেশের মন্দির ডিরেক্টরি</span>
               </div>
               <div className="flex justify-center mb-6">
-                <img
+                <Image
                   src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825110/Logo_pmyblv.png"
                   alt="Amar Mondir Logo"
-                  className="h-24 md:h-32 w-auto"
+                  width={128}
+                  height={128}
+                  className="h-24 w-auto md:h-32"
+                  priority
                 />
               </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 font-serif leading-[1.1]">
@@ -113,7 +116,7 @@ export default async function HomePage() {
         {/* Stats */}
         <section className="border-b bg-white">
           <div className="container mx-auto px-4 py-10">
-            <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto text-center">
+            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-3 text-center sm:grid-cols-3 sm:gap-4">
               <div className="p-4">
                 <p className="text-3xl md:text-4xl font-bold font-serif text-orange-600">{stats.total}+</p>
                 <p className="text-sm text-gray-500 mt-1 bengali-text">নিবন্ধিত মন্দির</p>

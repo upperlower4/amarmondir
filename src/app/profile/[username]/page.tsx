@@ -72,6 +72,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   const { profile, contributedTemples, leaderboardRank } = data;
   const joinedDate = formatJoinedDate(profile.created_at);
+  const profileInitial = (profile.username || profile.full_name || 'U').trim().charAt(0).toUpperCase() || 'U';
 
   return (
     <>
@@ -83,7 +84,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <div className="relative shrink-0">
                 <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white shadow-2xl">
                   <AvatarImage src={profile.avatar_url || ''} />
-                  <AvatarFallback className="text-4xl">{profile.username[0].toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-4xl">{profileInitial}</AvatarFallback>
                 </Avatar>
                 {profile.is_admin && (
                   <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-xl shadow-lg border-2 border-white">

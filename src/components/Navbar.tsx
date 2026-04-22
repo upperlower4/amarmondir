@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MapPin, Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck, X } from 'lucide-react';
+import { Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +35,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 min-w-0">
             
             <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 font-serif truncate">
-              <img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir" className="h-8 w-auto" />
+              <Image src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" alt="Amar Mondir" width={168} height={32} className="h-8 w-auto" priority />
             </span>
           </Link>
 

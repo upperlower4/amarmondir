@@ -63,20 +63,6 @@ async function getTempleData(slug: string) {
   return { temple, photos, contributors, festivals };
 }
 
-function renderArticleContent(article?: string | null) {
-  if (!article) return null;
-
-  return article
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
-    .map((paragraph, index) => (
-      <p key={index} className="mb-4 whitespace-pre-line">
-        {paragraph}
-      </p>
-    ));
-}
-
 export default async function TemplePage({ params, searchParams }: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const { slug } = await params;
   const sParams = await searchParams;
@@ -87,6 +73,7 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
   if (!data) notFound();
 
   const { temple, photos, contributors, festivals } = data;
+  const safeContributors = (contributors || []).filter((cont: any) => cont?.profiles?.username);
 
   return (
     <>
@@ -122,7 +109,7 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
               </Badge>
             </div>
 
-            <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-3 font-serif leading-tight">{temple.title}</h1>
+            <h1 className="mb-3 break-words text-3xl font-bold leading-tight text-gray-900 font-serif md:text-5xl lg:text-6xl">{temple.title}</h1>
             <p className="text-lg text-gray-500 italic md:text-2xl mb-6 md:mb-8 tracking-wide">
               {temple.english_name}
             </p>
@@ -293,8 +280,8 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {(contributors?.length ?? 0) > 0 ? (
-                    contributors?.map((cont: any) => (
+                  {(safeContributors.length ?? 0) > 0 ? (
+                    safeContributors.map((cont: any) => (
                       <Link
                         key={cont.id}
                         href={`/profile/${cont.profiles.username}`}

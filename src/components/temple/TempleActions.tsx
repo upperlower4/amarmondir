@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Edit2, Flag, ImagePlus, Loader2, ShieldAlert, ChevronRight, ChevronLeft, Upload, CheckCircle2, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
 
 async function authedFetch(url: string, body: any) {
@@ -52,7 +52,6 @@ async function uploadImage(file: File) {
 }
 
 import { useTempleEdit } from './TempleEditProvider';
-import { useEffect } from 'react';
 
 export function TempleActions({ templeId, defaultValues }: { templeId: string; defaultValues: Record<string, any> }) {
   const { isEditMode, setIsEditMode, setOpenEditDialog } = useTempleEdit();
@@ -69,16 +68,21 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
     });
   }, [setOpenEditDialog]);
 
+  useEffect(() => {
+    setEditValues(initialEdit);
+  }, [initialEdit]);
+
   const toggleEditMode = () => {
-    // Open dialog directly as requested for "direct update"
-    setEditOpen(true);
-    setEditStep(1);
-    
-    // Also toggle edit mode to show pencils for individual section edits
-    if (!isEditMode) {
-      setIsEditMode(true);
-      toast.info("এডিট মোড চালু হয়েছে। আপনি সরাসরি ফর্ম পূরণ করতে পারেন অথবা পেন্সিল আইকনে ক্লিক করে নির্দিষ্ট অংশ এডিট করতে পারেন।");
+    if (isEditMode) {
+      setIsEditMode(false);
+      toast.success('এডিট মোড বন্ধ হয়েছে।');
+      return;
     }
+
+    setIsEditMode(true);
+    setEditStep(1);
+    setEditOpen(true);
+    toast.info('এডিট মোড চালু হয়েছে। আপনি সরাসরি ফর্ম পূরণ করতে পারেন অথবা পেন্সিল আইকনে ক্লিক করে নির্দিষ্ট অংশ এডিট করতে পারেন।');
   };
 
   // Edit State
@@ -207,7 +211,7 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
             </DialogHeader>
           </div>
 
-          <div className="p-8 h-[400px] md:h-[450px] overflow-y-auto">
+          <div className="max-h-[55vh] overflow-y-auto p-5 md:max-h-[58vh] md:p-8">
             <AnimatePresence mode="wait">
               {editStep === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
@@ -237,7 +241,7 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
             </AnimatePresence>
           </div>
 
-          <DialogFooter className="p-8 pt-0 flex sm:justify-between items-center bg-gray-50/50">
+          <DialogFooter className="flex items-center bg-gray-50/50 p-5 pt-0 sm:justify-between md:p-8 md:pt-0">
             <div className="text-sm text-gray-500 font-medium">ধাপ {editStep}/৩</div>
             <div className="flex gap-2">
               {editStep > 1 && <Button variant="outline" onClick={() => setEditStep(p => p - 1)} className="rounded-xl"><ChevronLeft className="h-4 w-4 mr-1" /> পেছনে</Button>}
