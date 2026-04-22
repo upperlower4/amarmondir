@@ -304,7 +304,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                   <p className="text-sm text-gray-500 bengali-text">মোট {temples.length}টি মন্দির পাওয়া গেছে</p>
                 </div>
 
-                <form action="/directory" method="GET" className="flex items-center gap-2 flex-wrap">
+                <form action="/directory" method="GET" className="flex items-center gap-2 w-full sm:w-auto">
                   {params.division && <input type="hidden" name="division" value={params.division} />}
                   {params.district && <input type="hidden" name="district" value={params.district} />}
                   {params.type && <input type="hidden" name="type" value={params.type} />}
