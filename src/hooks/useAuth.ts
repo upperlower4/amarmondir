@@ -27,6 +27,10 @@ export function useAuth() {
 
       if (!isActive) return;
 
+      if (session) {
+        document.cookie = `amarmondir-auth-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      }
+
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
@@ -42,6 +46,13 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isActive) return;
+
+      // Sync session to cookie for middleware
+      if (session) {
+        document.cookie = `amarmondir-auth-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      } else {
+        document.cookie = 'amarmondir-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
 
       setUser(session?.user ?? null);
       if (session?.user) {

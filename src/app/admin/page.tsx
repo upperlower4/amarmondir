@@ -106,11 +106,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (profile?.is_admin) {
-      fetchAdminData();
+      const fetch = async () => {
+        await fetchAdminData();
+      };
+      fetch();
     } else if (profile && !profile.is_admin) {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 0);
     } else if (!authLoading) {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 0);
     }
   }, [profile, authLoading]);
 

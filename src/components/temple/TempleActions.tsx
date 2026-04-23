@@ -77,8 +77,11 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
   const [editValues, setEditValues] = useState(initialEdit);
 
   useEffect(() => {
-    setEditValues(initialEdit);
-  }, [initialEdit]);
+    // Only update if initialEdit is different to avoid infinite loops or unnecessary renders
+    if (JSON.stringify(editValues) !== JSON.stringify(initialEdit)) {
+      setTimeout(() => setEditValues(initialEdit), 0);
+    }
+  }, [initialEdit, editValues]);
 
   const toggleEditMode = () => {
     if (isEditMode) {

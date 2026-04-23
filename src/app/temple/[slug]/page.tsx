@@ -26,6 +26,9 @@ import { getDivisionColor } from '@/lib/utils';
 import Link from 'next/link';
 import { TempleTabs } from '@/components/temple/TempleTabs';
 import { EditableField } from '@/components/temple/EditableField';
+import { TempleEditProvider } from '@/components/temple/TempleEditProvider';
+import { ShareButton } from '@/components/temple/ShareButton';
+import { TempleActions } from '@/components/temple/TempleActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,7 +116,7 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
   const safeContributors = (contributors || []).filter((cont: any) => cont?.profiles?.username);
 
   return (
-    <>
+    <TempleEditProvider>
       <Navbar />
       <main className="flex-1 bg-white relative selection:bg-orange-100 selection:text-orange-900">
         
@@ -303,16 +306,14 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
                       </Button>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="w-full rounded-xl border-gray-200" asChild>
-                        <Link href={`/temple/${temple.slug}?edit=true`} scroll={false}>
-                          <Edit2 className="h-4 w-4 mr-2" /> আপডেট
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="w-full rounded-xl border-gray-200" suppressHydrationWarning>
-                        <Share2 className="h-4 w-4 mr-2" /> শেয়ার
-                      </Button>
-                    </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button variant="outline" className="w-full rounded-xl border-gray-200" asChild>
+                          <Link href={`/temple/${temple.slug}?edit=true`} scroll={false}>
+                            <Edit2 className="h-4 w-4 mr-2" /> আপডেট
+                          </Link>
+                        </Button>
+                        <ShareButton title={temple.title} />
+                      </div>
                   </div>
                 </div>
               </div>
@@ -359,6 +360,6 @@ export default async function TemplePage({ params, searchParams }: { params: Pro
         </div>
       </main>
       <Footer />
-    </>
+    </TempleEditProvider>
   );
 }

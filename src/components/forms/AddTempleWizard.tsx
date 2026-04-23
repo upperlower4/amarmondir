@@ -491,7 +491,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     ) : (
                       <label className="flex flex-col items-center gap-2 cursor-pointer text-orange-600 hover:text-orange-700">
                         <ImagePlus className="h-10 w-10" />
-                        <span className="font-bold bengali-text">ছবি নির্বাচন করুন (৮০-১২০KB হবে)</span>
+                        <span className="font-bold bengali-text">ছবি নির্বাচন করুন (কম্প্রেসড ছবি সাজেস্টেড)</span>
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'cover')} />
                       </label>
                     )}

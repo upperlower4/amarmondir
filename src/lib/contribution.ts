@@ -77,32 +77,61 @@ export async function syncProfileStats(profileId: string) {
 }
 
 export async function getLeaderboardProfiles() {
-  const { data: profiles } = await supabase
+  const admin = getSupabaseAdmin();
+  
+  // 1. Fetch all profiles
+  const { data: profiles, error: profileError } = await admin
     .from('profiles')
     .select('id, username, full_name, avatar_url, badge, temples_added, edits_made');
 
-  if (!profiles) return [];
+  if (profileError || !profiles) return [];
 
-  const summaries = await Promise.all(
-    profiles.map(async (profile) => ({
-      ...profile,
-      contribution: await getContributionSummary(profile.id),
-    }))
-  );
+  // 2. Fetch all relevant approved/rejected entries in bulk to avoid N+1
+  const [temples, edits, photos] = await Promise.all([
+    admin.from('temples').select('created_by, status'),
+    admin.from('temple_edits').select('profile_id, status'),
+    admin.from('temple_photos').select('profile_id, status'),
+  ]);
 
-  return summaries
-    .map((profile) => ({
+  const templeData = temples.data || [];
+  const editData = edits.data || [];
+  const photoData = photos.data || [];
+
+  // 3. Map outcomes to profiles
+  const leaderboard = profiles.map(profile => {
+    const userTemples = templeData.filter(t => t.created_by === profile.id);
+    const userEdits = editData.filter(e => e.profile_id === profile.id);
+    const userPhotos = photoData.filter(p => p.profile_id === profile.id);
+
+    const approvedTemples = userTemples.filter(t => t.status === 'approved').length;
+    const approvedEdits = userEdits.filter(e => e.status === 'approved').length;
+    const approvedPhotos = userPhotos.filter(p => p.status === 'approved').length;
+    
+    const rejectedTemples = userTemples.filter(t => t.status === 'rejected').length;
+    const rejectedEdits = userEdits.filter(e => e.status === 'rejected').length;
+    const rejectedPhotos = userPhotos.filter(p => p.status === 'rejected').length;
+    const rejectedCount = rejectedTemples + rejectedEdits + rejectedPhotos;
+
+    const score = (approvedTemples * POINTS.TEMPLE_ADD) + 
+                  (approvedEdits * POINTS.EDIT_APPROVED) + 
+                  (approvedPhotos * POINTS.PHOTO_APPROVED) - 
+                  (rejectedCount * POINTS.REJECTION_PENALTY);
+
+    return {
       ...profile,
-      temples_added: profile.contribution.approvedTempleCount,
-      edits_made: profile.contribution.approvedEditCount,
-      photos_added: profile.contribution.approvedPhotoCount,
-      rejected_count: profile.contribution.rejectedCount,
-      score: profile.contribution.score,
-    }))
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
-      if (b.edits_made !== a.edits_made) return b.edits_made - a.edits_made;
-      return b.photos_added - a.photos_added;
-    });
+      temples_added: approvedTemples,
+      edits_made: approvedEdits,
+      photos_added: approvedPhotos,
+      rejected_count: rejectedCount,
+      score: score
+    };
+  });
+
+  // 4. Sort and return
+  return leaderboard.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
+    if (b.edits_made !== a.edits_made) return b.edits_made - a.edits_made;
+    return b.photos_added - a.photos_added;
+  });
 }
