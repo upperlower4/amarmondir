@@ -37,8 +37,8 @@ const formSchema = z.object({
   article_content: z.string().optional(),
 });
 
-const MAX_COVER_SIZE_MB = 2;
-const MAX_GALLERY_SIZE_MB = 2;
+const MAX_COVER_SIZE_MB = 5;
+const MAX_GALLERY_SIZE_MB = 5;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
 function fileToBase64(file: File) {
@@ -146,35 +146,55 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       throw new Error('আপনাকে আবার লগইন করতে হবে');
     }
 
-    const uploadSingle = async (image: string, folder: string, type: 'cover' | 'gallery' | 'avatar') => {
+    const uploadSingle = async (image: string, folder: string, type: 'cover' | 'gallery' | 'avatar', index?: number) => {
+      const label = index !== undefined ? `${type} ${index + 1}` : type;
+      console.log(`Starting upload for ${label}...`);
+      
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: safeJsonStringify({ image, folder, type }),
+        body: JSON.stringify({ image, folder, type }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || 'Upload failed');
+        console.error(`Upload failed for ${label}:`, data?.error);
+        throw new Error(data?.error || `${label} আপলোড ব্যর্থ হয়েছে`);
       }
 
+      console.log(`Successfully uploaded ${label}`);
       return data.url as string;
     };
 
+    const uploadPromises: Promise<any>[] = [];
+
     if (coverImage && typeof coverImage === 'string') {
-      uploadedUrls.cover = await uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover');
+      uploadPromises.push(
+        uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover').then(url => {
+          uploadedUrls.cover = url;
+        })
+      );
     }
 
-    for (const img of galleryImages) {
+    galleryImages.forEach((img, idx) => {
       if (typeof img === 'string') {
-        const url = await uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery');
-        uploadedUrls.gallery.push(url);
+        uploadPromises.push(
+          uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery', idx).then(url => {
+            uploadedUrls.gallery.push(url);
+          })
+        );
       }
-    }
+    });
+
+    if (uploadPromises.length === 0) return uploadedUrls;
+
+    console.log(`Executing ${uploadPromises.length} parallel uploads...`);
+    await Promise.all(uploadPromises);
+    console.log('All images uploaded successfully');
 
     return uploadedUrls;
   };
@@ -201,6 +221,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     console.log('onSubmit triggered with values:', values);
     setLoading(true);
     try {
+      toast.info('ছবি ও তথ্য আপলোড হচ্ছে, দয়া করে কিছুক্ষণ অপেক্ষা করুন...', { duration: 6000 });
       console.log('Uploading images...');
       const urls = await uploadImages();
       console.log('Images uploaded:', urls);
