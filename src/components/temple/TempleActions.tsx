@@ -60,27 +60,6 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
   const [photoOpen, setPhotoOpen] = useState(false);
   const [loading, setLoading] = useState<'edit' | 'report' | 'photo' | null>(null);
 
-  // Expose the open function to the context
-  useEffect(() => {
-    setOpenEditDialog((step?: number) => {
-      if (step) setEditStep(step);
-      setEditOpen(true);
-    });
-  }, [setOpenEditDialog]);
-
-  const toggleEditMode = () => {
-    if (isEditMode) {
-      setIsEditMode(false);
-      toast.success('এডিট মোড বন্ধ হয়েছে।');
-      return;
-    }
-
-    setIsEditMode(true);
-    setEditStep(1);
-    setEditOpen(true);
-    toast.info('এডিট মোড চালু হয়েছে। আপনি সরাসরি ফর্ম পূরণ করতে পারেন অথবা পেন্সিল আইকনে ক্লিক করে নির্দিষ্ট অংশ এডিট করতে পারেন।');
-  };
-
   // Edit State
   const [editStep, setEditStep] = useState(1);
   const initialEdit = useMemo(() => ({
@@ -100,6 +79,27 @@ export function TempleActions({ templeId, defaultValues }: { templeId: string; d
   useEffect(() => {
     setEditValues(initialEdit);
   }, [initialEdit]);
+
+  const toggleEditMode = () => {
+    if (isEditMode) {
+      setIsEditMode(false);
+      toast.success('এডিট মোড বন্ধ হয়েছে।');
+      return;
+    }
+
+    setIsEditMode(true);
+    setEditStep(1);
+    setEditOpen(true);
+    toast.info('এডিট মোড চালু হয়েছে। আপনি সরাসরি ফর্ম পূরণ করতে পারেন অথবা পেন্সিল আইকনে ক্লিক করে নির্দিষ্ট অংশ এডিট করতে পারেন।');
+  };
+
+  // Expose the open function to the context
+  useEffect(() => {
+    setOpenEditDialog((step?: number) => {
+      if (step) setEditStep(step);
+      setEditOpen(true);
+    });
+  }, [setOpenEditDialog]);
 
   // Photo State
   const [photoStep, setPhotoStep] = useState(1);

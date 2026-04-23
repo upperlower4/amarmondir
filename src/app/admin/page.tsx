@@ -35,14 +35,6 @@ export default function AdminPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (profile?.is_admin) {
-      fetchAdminData();
-    } else if (!authLoading) {
-      setLoading(false);
-    }
-  }, [profile, authLoading]);
-
   const fetchAdminData = async () => {
     setLoading(true);
 
@@ -111,6 +103,16 @@ export default function AdminPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (profile?.is_admin) {
+      fetchAdminData();
+    } else if (profile && !profile.is_admin) {
+      setLoading(false);
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [profile, authLoading]);
 
   const handleModerateTemple = async (id: string, status: 'approved' | 'rejected') => {
     setProcessingId(id);

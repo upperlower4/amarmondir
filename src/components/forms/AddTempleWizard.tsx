@@ -134,6 +134,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   };
 
   const uploadImages = async () => {
+    console.log('Starting image upload process...');
     const uploadedUrls: { cover?: string; gallery: string[] } = { gallery: [] };
 
     const {
@@ -197,12 +198,18 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('onSubmit triggered with values:', values);
     setLoading(true);
     try {
+      console.log('Uploading images...');
       const urls = await uploadImages();
-      const slug = `${generateSlug(values.english_name)}-${crypto.randomUUID().slice(0, 8)}`;
+      console.log('Images uploaded:', urls);
 
-      // 1. Insert Temple
+      const uuidFragment = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).substring(2, 10);
+      const slug = `${generateSlug(values.english_name)}-${uuidFragment}`;
+      console.log('Generated slug:', slug);
+
+      // 1. Prepare clean values
       const cleanValues = {
         title: String(values.title || ''),
         english_name: String(values.english_name || ''),
@@ -217,20 +224,26 @@ export function AddTempleWizard({ userId }: { userId: string }) {
         address: String(values.address || ''),
         map_link: values.map_link ? String(values.map_link) : null,
         article_content: values.article_content ? String(values.article_content) : null,
-        latitude: values.latitude ? parseFloat(String(values.latitude)) : null,
-        longitude: values.longitude ? parseFloat(String(values.longitude)) : null,
+        latitude: (values.latitude && !isNaN(parseFloat(values.latitude))) ? parseFloat(values.latitude) : null,
+        longitude: (values.longitude && !isNaN(parseFloat(values.longitude))) ? parseFloat(values.longitude) : null,
       };
 
-      // Call the API route for secure insert bypassing RLS
+      // 2. Auth Session
+      console.log('Fetching session...');
       const {
         data: { session },
       } = await supabase.auth.getSession();
       
+      if (!session?.access_token) {
+        throw new Error('আপনার সেশন এক্সপায়ার হয়েছে। দয়া করে আবার লগইন করুন।');
+      }
+
+      console.log('Posting to /api/temples...');
       const res = await fetch('/api/temples', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: safeJsonStringify({
           cleanValues,
@@ -240,6 +253,8 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       });
 
       const result = await res.json();
+      console.log('API Response received:', result);
+
       if (!res.ok) {
         throw new Error(result.error || 'Submission failed');
       }
@@ -249,12 +264,22 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       });
       router.push('/directory');
     } catch (error: any) {
-      console.error('Form submission error:', safeJsonStringify(error));
-      const errorMessage = typeof error === 'string' ? error : error?.message || 'সাবমিশন ব্যর্থ হয়েছে';
-      toast.error('সাবমিশন ব্যর্থ হয়েছে', { description: String(errorMessage).slice(0, 500) });
+      console.error('Form submission detailed error:', error);
+      const errorMessage = error?.message || 'সাবমিশন ব্যর্থ হয়েছে';
+      toast.error('সাবমিশন ব্যর্থ হয়েছে', { 
+        description: errorMessage,
+        duration: 5000
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error('Form validation errors:', errors);
+    toast.error('ফর্মে ভুল আছে', {
+      description: 'অনুগ্রহ করে সব তথ্য সঠিক ভাবে দিন।'
+    });
   };
 
   return (
@@ -281,7 +306,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
           
           {/* Step 1: Basic Info */}
           {step === 1 && (
