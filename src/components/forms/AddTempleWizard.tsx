@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES, CLOUDINARY_FOLDERS } from '@/lib/constants';
 import { UPAZILAS } from '@/lib/upazilas';
-import { ImagePlus, MapPin, CheckCircle, Info, FileText, Loader2, Sparkles, X } from 'lucide-react';
+import { ImagePlus, MapPin, CheckCircle, Info, FileText, Loader2, Sparkles, X, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { generateSlug, safeJsonStringify } from '@/lib/utils';
@@ -576,8 +576,4 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       </Form>
     </div>
   );
-}
-
-function Plus({ className }: { className?: string }) {
-  return <ImagePlus className={className} />;
 }
