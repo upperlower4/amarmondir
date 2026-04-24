@@ -321,7 +321,7 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
                   <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mr-1">ফিল্টার:</span>
                   {params.q && (
                     <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium border border-orange-100">
-                      <span>"{params.q}"</span>
+                      <span>&quot;{params.q}&quot;</span>
                       <Link href={buildDirectoryHref(params, { q: '' })}><X className="h-3 w-3" /></Link>
                     </div>
                   )}

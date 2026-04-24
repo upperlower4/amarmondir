@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     if (!isConfigured) {
       toast.error('সিস্টেম এরর', {
-        description: 'Supabase ডাটাবেস ঠিকভাবে কনফিগার করা হয়নি। দয়া করে সেটিংস চেক করুন।',
+        description: 'ডাটাবেস সঠিকভাবে কনফিগার করা হয়নি।',
       });
       return;
     }
@@ -39,18 +39,16 @@ export default function LoginPage() {
         throw error;
       }
 
-      toast.success('সফলভাবে লগ ইন হয়েছে');
+      toast.success('সফলভাবে লগ ইন করেছেন');
       router.push('/');
       router.refresh();
     } catch (error: any) {
       let errorMsg = String(error?.message || error);
       
-      if (errorMsg.includes('Email not confirmed')) {
-        errorMsg = 'আপনার ইমেইলটি ভেরিফাই করা হয়নি। ইনবক্স (বা স্প্যাম ফোল্ডার) চেক করে কনফার্মেশন লিংকে ক্লিক করুন।';
-      } else if (errorMsg.includes('Invalid login credentials')) {
-        errorMsg = 'ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন। দয়া করে আবার চেষ্টা করুন।';
+      if (errorMsg === 'Invalid login credentials') {
+         errorMsg = 'ইমেইল বা পাসওয়ার্ড ভুল';
       }
-
+      
       toast.error('লগ ইন ব্যর্থ হয়েছে', {
         description: errorMsg,
       });
@@ -67,13 +65,13 @@ export default function LoginPage() {
             <MapPin className="h-8 w-8" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight font-serif">amarmondir</h1>
-          <p className="text-muted-foreground bengali-text">মন্দির ডিরেক্টরিতে স্বাগতম</p>
+          <p className="text-muted-foreground bengali-text">Welcome to Temple Directory</p>
         </div>
 
         <Card className="border-none shadow-2xl shadow-orange-100/50">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">লগ ইন করুন</CardTitle>
-            <CardDescription>আপনার অ্যাকাউন্ট ব্যবহার করে প্রবেশ করুন</CardDescription>
+            <CardTitle className="text-2xl font-bold">লগ ইন</CardTitle>
+            <CardDescription>আপনার অ্যাকাউন্টে প্রবেশ করুন</CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
             <CardContent className="space-y-4 pt-4">
@@ -84,18 +82,21 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">পাসওয়ার্ড</Label>
+                  <Link href="/forgot-password" className="text-xs font-semibold text-orange-600 hover:underline">
+                    পাসওয়ার্ড ভুলে গেছেন?
+                  </Link>
                 </div>
                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
-                {loading ? 'প্রসেসিং...' : 'প্রবেশ করুন'}
+                {loading ? 'প্রসেসিং...' : 'লগ ইন করুন'}
               </Button>
               <div className="text-center text-sm text-muted-foreground">
                 অ্যাকাউন্ট নেই?{' '}
                 <Link href="/signup" className="font-semibold text-orange-600 hover:underline">
-                  রেজিস্ট্রেশন করুন
+                  সাইন আপ করুন
                 </Link>
               </div>
             </CardFooter>
