@@ -150,8 +150,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     type: 'cover' | 'gallery' | 'avatar',
     session: any,
     label: string,
+    onProgress: (msg: string) => void
   ): Promise<string> => {
-    // 1. Get signed params from our API (tiny request, no image data)
+    // 1. Get signed params from our API
+    onProgress(`${label} প্রস্তুত করা হচ্ছে...`);
     const signRes = await fetch('/api/upload-sign', {
       method: 'POST',
       headers: {
@@ -168,7 +170,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
 
     const { signature, timestamp, folder, transformation, api_key, cloud_name } = await signRes.json();
 
-    // 2. Upload directly to Cloudinary with FormData
+    // 2. Upload directly to Cloudinary with FormData and XHR for progress tracking
     const formData = new FormData();
     formData.append('file', file);
     formData.append('api_key', api_key);
@@ -177,19 +179,42 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     formData.append('folder', folder);
     formData.append('transformation', transformation);
 
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
-      { method: 'POST', body: formData }
-    );
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`);
+      
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(`${label} আপলোড হচ্ছে (${percent}%)`);
+        }
+      };
 
-    if (!uploadRes.ok) {
-      const err = await uploadRes.json();
-      throw new Error(err?.error?.message || `${label} upload failed`);
-    }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (!data.secure_url) reject(new Error(`${label} upload failed: no URL returned`));
+            else resolve(data.secure_url);
+          } catch (err) {
+            reject(new Error(`Invalid response for ${label}`));
+          }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err?.error?.message || `${label} upload failed`));
+          } catch (e) {
+            reject(new Error(`${label} upload failed with status ${xhr.status}`));
+          }
+        }
+      };
 
-    const data = await uploadRes.json();
-    if (!data.secure_url) throw new Error(`${label} upload failed: no URL returned`);
-    return data.secure_url as string;
+      xhr.onerror = () => reject(new Error(`${label} upload network error`));
+      xhr.ontimeout = () => reject(new Error(`${label} upload timed out (network issue)`));
+      
+      xhr.timeout = 120000; // 2 minutes timeout for slow mobile networks
+      xhr.send(formData);
+    });
   };
 
   const uploadImages = async (onProgress: (msg: string) => void) => {
@@ -199,13 +224,11 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     if (!session?.access_token) throw new Error('আপনাকে আবার লগইন করতে হবে');
 
     if (coverImageFile) {
-      onProgress('কভার ছবি আপলোড হচ্ছে...');
-      uploadedUrls.cover = await uploadFileDirect(coverImageFile, 'cover', session, 'Cover');
+      uploadedUrls.cover = await uploadFileDirect(coverImageFile, 'cover', session, 'কভার ছবি', onProgress);
     }
 
     for (let idx = 0; idx < galleryImageFiles.length; idx++) {
-      onProgress(`গ্যালারি ছবি আপলোড হচ্ছে (${idx + 1}/${galleryImageFiles.length})...`);
-      const url = await uploadFileDirect(galleryImageFiles[idx], 'gallery', session, `Gallery ${idx + 1}`);
+      const url = await uploadFileDirect(galleryImageFiles[idx], 'gallery', session, `গ্যালারি ছবি ${idx + 1}`, onProgress);
       uploadedUrls.gallery.push(url);
     }
 
@@ -505,7 +528,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                       <label className="flex flex-col items-center gap-2 cursor-pointer text-orange-600 hover:text-orange-700">
                         <ImagePlus className="h-10 w-10" />
                         <span className="font-bold bengali-text">ছবি নির্বাচন করুন (কম্প্রেসড ছবি সাজেস্টেড)</span>
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'cover')} />
+                        <input type="file" className="hidden" accept="image/jpeg, image/png, image/webp" onChange={(e) => onFileChange(e, 'cover')} />
                       </label>
                     )}
                   </div>
@@ -533,7 +556,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                       <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
                         <Plus className="h-6 w-6 text-gray-400" />
                         <span className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Add More</span>
-                        <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => onFileChange(e, 'gallery')} />
+                        <input type="file" className="hidden" accept="image/jpeg, image/png, image/webp" multiple onChange={(e) => onFileChange(e, 'gallery')} />
                       </label>
                     )}
                   </div>

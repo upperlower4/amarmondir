@@ -3,11 +3,18 @@ import { Footer } from '@/components/Footer';
 import { TempleCard } from '@/components/TempleCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Sidebar, Search } from 'lucide-react';
+import { Sidebar, Search, SlidersHorizontal, MapPin, ListFilter, X } from 'lucide-react';
 import { safeJsonStringify } from '@/lib/utils';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export const dynamic = 'force-dynamic';
 
@@ -100,218 +107,245 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
       <main className="flex-1 bg-gray-50/50">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row gap-8">
-            <aside className="w-full md:w-64 space-y-8 bg-white p-5 md:p-6 rounded-2xl border h-fit shrink-0 md:overflow-y-auto md:max-h-[calc(100vh-8rem)] md:sticky md:top-24">
-              {/* Desktop Filters */}
-              <div className="hidden md:block">
-                <h3 className="font-bold mb-4 flex items-center gap-2">
-                  <Sidebar className="h-4 w-4 text-orange-500" />
-                  ফিল্টার
-                </h3>
+            {/* Filters Sidebar (Desktop) */}
+            <aside className="hidden md:block w-64 space-y-8 bg-white p-6 rounded-2xl border h-fit shrink-0 overflow-y-auto max-h-[calc(100vh-8rem)] sticky top-24">
+              <h3 className="font-bold mb-4 flex items-center gap-2">
+                <Sidebar className="h-4 w-4 text-orange-500" />
+                ফিল্টার
+              </h3>
 
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">বিভাগ</h4>
-                    <div className="space-y-2">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">বিভাগ</h4>
+                  <div className="space-y-2">
+                    <Link
+                      href={buildDirectoryHref(params, { division: '', district: '' })}
+                      className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.division ? 'text-orange-600 font-bold' : ''}`}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.division ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                        {!params.division && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      সব বিভাগ
+                    </Link>
+
+                    {DIVISIONS.map((div) => (
                       <Link
-                        href={buildDirectoryHref(params, { division: '', district: '' })}
-                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.division ? 'text-orange-600 font-bold' : ''}`}
+                        key={div}
+                        href={buildDirectoryHref(params, { division: div, district: '' })}
+                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.division === div ? 'text-orange-600 font-bold' : ''}`}
                       >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.division ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                          {!params.division && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.division === div ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                          {params.division === div && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                         </div>
-                        সব বিভাগ
+                        {div}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {params.division && selectedDivisionDistricts.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">জেলা</h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      <Link
+                        href={buildDirectoryHref(params, { district: '' })}
+                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.district ? 'text-orange-600 font-bold' : ''}`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                          {!params.district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        </div>
+                        সব জেলা
                       </Link>
 
-                      {DIVISIONS.map((div) => (
+                      {selectedDivisionDistricts.map((district) => (
                         <Link
-                          key={div}
-                          href={buildDirectoryHref(params, { division: div, district: '' })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.division === div ? 'text-orange-600 font-bold' : ''}`}
+                          key={district}
+                          href={buildDirectoryHref(params, { district })}
+                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.district === district ? 'text-orange-600 font-bold' : ''}`}
                         >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.division === div ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {params.division === div && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.district === district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                            {params.district === district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                           </div>
-                          {div}
+                          <span className="break-anywhere">{district}</span>
                         </Link>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  {params.division && selectedDivisionDistricts.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">জেলা</h4>
-                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <Link
-                          href={buildDirectoryHref(params, { district: '' })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.district ? 'text-orange-600 font-bold' : ''}`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {!params.district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                          </div>
-                          সব জেলা
-                        </Link>
-
-                        {selectedDivisionDistricts.map((district) => (
-                          <Link
-                            key={district}
-                            href={buildDirectoryHref(params, { district })}
-                            className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.district === district ? 'text-orange-600 font-bold' : ''}`}
-                          >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.district === district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                              {params.district === district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                            </div>
-                            <span className="break-anywhere">{district}</span>
-                          </Link>
-                        ))}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">মন্দিরের ধরন</h4>
+                  <div className="space-y-2">
+                    <Link
+                      href={buildDirectoryHref(params, { type: '' })}
+                      className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.type ? 'text-orange-600 font-bold' : ''}`}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                        {!params.type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
-                    </div>
-                  )}
+                      সব ধরন
+                    </Link>
 
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">মন্দিরের ধরন</h4>
-                    <div className="space-y-2">
+                    {TEMPLE_TYPES.map((type) => (
                       <Link
-                        href={buildDirectoryHref(params, { type: '' })}
-                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.type ? 'text-orange-600 font-bold' : ''}`}
+                        key={type}
+                        href={buildDirectoryHref(params, { type })}
+                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.type === type ? 'text-orange-600 font-bold' : ''}`}
                       >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                          {!params.type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.type === type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                          {params.type === type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                         </div>
-                        সব ধরন
+                        <span className="break-anywhere">{type}</span>
                       </Link>
-
-                      {TEMPLE_TYPES.map((type) => (
-                        <Link
-                          key={type}
-                          href={buildDirectoryHref(params, { type })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.type === type ? 'text-orange-600 font-bold' : ''}`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.type === type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {params.type === type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                          </div>
-                          <span className="break-anywhere">{type}</span>
-                        </Link>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              {/* Mobile Filters */}
-              <details className="md:hidden group" open={false}>
-                <summary className="font-bold mb-4 flex items-center justify-between cursor-pointer p-2 bg-orange-50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Sidebar className="h-4 w-4 text-orange-500" />
-                    ফিল্টার অপশন
-                  </div>
-                  <span className="text-orange-500 group-open:rotate-180 transition-transform">▼</span>
-                </summary>
-                
-                <div className="space-y-6 pt-2">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">বিভাগ</h4>
-                    <div className="space-y-2">
-                      <Link
-                        href={buildDirectoryHref(params, { division: '', district: '' })}
-                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.division ? 'text-orange-600 font-bold' : ''}`}
-                      >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.division ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                          {!params.division && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </div>
-                        সব বিভাগ
-                      </Link>
-
-                      {DIVISIONS.map((div) => (
-                        <Link
-                          key={div}
-                          href={buildDirectoryHref(params, { division: div, district: '' })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.division === div ? 'text-orange-600 font-bold' : ''}`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.division === div ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {params.division === div && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                          </div>
-                          {div}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-
-                  {params.division && selectedDivisionDistricts.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">জেলা</h4>
-                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <Link
-                          href={buildDirectoryHref(params, { district: '' })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.district ? 'text-orange-600 font-bold' : ''}`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {!params.district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                          </div>
-                          সব জেলা
-                        </Link>
-
-                        {selectedDivisionDistricts.map((district) => (
-                          <Link
-                            key={district}
-                            href={buildDirectoryHref(params, { district })}
-                            className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.district === district ? 'text-orange-600 font-bold' : ''}`}
-                          >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.district === district ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                              {params.district === district && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                            </div>
-                            <span className="break-anywhere">{district}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">মন্দিরের ধরন</h4>
-                    <div className="space-y-2">
-                      <Link
-                        href={buildDirectoryHref(params, { type: '' })}
-                        className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${!params.type ? 'text-orange-600 font-bold' : ''}`}
-                      >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${!params.type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                          {!params.type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </div>
-                        সব ধরন
-                      </Link>
-
-                      {TEMPLE_TYPES.map((type) => (
-                        <Link
-                          key={type}
-                          href={buildDirectoryHref(params, { type })}
-                          className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-orange-50 transition-colors ${params.type === type ? 'text-orange-600 font-bold' : ''}`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${params.type === type ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                            {params.type === type && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                          </div>
-                          <span className="break-anywhere">{type}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </details>
             </aside>
 
             <div className="flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
                 <div>
                   <h1 className="text-2xl font-bold font-serif">মন্দির ডিরেক্টরি</h1>
                   <p className="text-sm text-gray-500 bengali-text">মোট {temples.length}টি মন্দির পাওয়া গেছে</p>
                 </div>
 
-                <form action="/directory" method="GET" className="flex items-center gap-2 w-full sm:w-auto">
-                  {params.division && <input type="hidden" name="division" value={params.division} />}
-                  {params.district && <input type="hidden" name="district" value={params.district} />}
-                  {params.type && <input type="hidden" name="type" value={params.type} />}
-                  <Input name="q" defaultValue={params.q} placeholder="নাম দিয়ে খুঁজুন..." className="sm:w-64" />
-                  <Button type="submit" variant="outline">সার্চ</Button>
-                </form>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Mobile Filter Trigger */}
+                  <div className="md:hidden">
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" className="w-full flex items-center justify-between px-4 h-11 rounded-xl border-orange-200 bg-orange-50/50 text-orange-700 font-bold">
+                          <div className="flex items-center gap-2">
+                            <ListFilter className="h-4 w-4" />
+                            ফিল্টার অপশন
+                          </div>
+                          {Object.values(params).filter(Boolean).length > 0 && (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white text-[10px]">
+                              {Object.values(params).filter(Boolean).length}
+                            </span>
+                          )}
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl border-none !bg-white p-0">
+                        <div className="flex flex-col h-full">
+                          <SheetHeader className="p-6 border-b shrink-0">
+                            <div className="flex items-center justify-between">
+                               <SheetTitle className="text-xl font-bold flex items-center gap-2">
+                                  <SlidersHorizontal className="h-5 w-5 text-orange-500" /> ফিল্টার করুন
+                               </SheetTitle>
+                               {Object.values(params).filter(Boolean).length > 0 && (
+                                  <Link href="/directory" className="text-xs text-orange-600 font-bold px-3 py-1 rounded-full bg-orange-50">ক্লিয়ার করুন</Link>
+                               )}
+                            </div>
+                          </SheetHeader>
+                          
+                          <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-32">
+                             {/* Mobile Division Filter */}
+                             <section>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin className="h-3 w-3" /> বিভাগ</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                   <Link 
+                                      href={buildDirectoryHref(params, { division: '', district: '' })}
+                                      className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-center ${!params.division ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-100'}`}
+                                   >সব বিভাগ</Link>
+                                   {DIVISIONS.map(div => (
+                                     <Link 
+                                        key={div}
+                                        href={buildDirectoryHref(params, { division: div, district: '' })}
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-center ${params.division === div ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-100'}`}
+                                     >{div}</Link>
+                                   ))}
+                                </div>
+                             </section>
+
+                             {/* Mobile District Filter */}
+                             {params.division && selectedDivisionDistricts.length > 0 && (
+                               <section>
+                                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin className="h-3 w-3" /> জেলা ({params.division})</h4>
+                                  <div className="grid grid-cols-2 gap-2">
+                                     <Link 
+                                        href={buildDirectoryHref(params, { district: '' })}
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-center ${!params.district ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-gray-100'}`}
+                                     >সব জেলা</Link>
+                                     {selectedDivisionDistricts.map(dist => (
+                                       <Link 
+                                          key={dist}
+                                          href={buildDirectoryHref(params, { district: dist })}
+                                          className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all text-center ${params.district === dist ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-gray-100'}`}
+                                       >{dist}</Link>
+                                     ))}
+                                  </div>
+                               </section>
+                             )}
+
+                             {/* Mobile Type Filter */}
+                             <section>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><ListFilter className="h-3 w-3" /> মন্দিরের ধরন</h4>
+                                <div className="flex flex-wrap gap-2">
+                                   <Link 
+                                      href={buildDirectoryHref(params, { type: '' })}
+                                      className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${!params.type ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-100'}`}
+                                   >সব ধরন</Link>
+                                   {TEMPLE_TYPES.map(t => (
+                                     <Link 
+                                        key={t}
+                                        href={buildDirectoryHref(params, { type: t })}
+                                        className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${params.type === t ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-gray-100'}`}
+                                     >{t}</Link>
+                                   ))}
+                                </div>
+                             </section>
+                          </div>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+
+                  <form action="/directory" method="GET" className="flex items-center gap-2 w-full sm:w-auto">
+                    {params.division && <input type="hidden" name="division" value={params.division} />}
+                    {params.district && <input type="hidden" name="district" value={params.district} />}
+                    {params.type && <input type="hidden" name="type" value={params.type} />}
+                    <div className="relative w-full">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                       <Input name="q" defaultValue={params.q} placeholder="নাম দিয়ে খুঁজুন..." className="pl-9 pr-4 h-11 rounded-xl shadow-sm border-gray-200 sm:w-64" />
+                    </div>
+                    <Button type="submit" variant="default" className="bg-orange-500 hover:bg-orange-600 h-11 px-6 rounded-xl">সার্চ</Button>
+                  </form>
+                </div>
               </div>
+
+              {/* Active Pills */}
+              {Object.values(params).filter(Boolean).length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                  <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mr-1">ফিল্টার:</span>
+                  {params.q && (
+                    <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium border border-orange-100">
+                      <span>"{params.q}"</span>
+                      <Link href={buildDirectoryHref(params, { q: '' })}><X className="h-3 w-3" /></Link>
+                    </div>
+                  )}
+                  {params.division && (
+                    <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium border border-orange-100">
+                      <span>বিভাগ: {params.division}</span>
+                      <Link href={buildDirectoryHref(params, { division: '', district: '' })}><X className="h-3 w-3" /></Link>
+                    </div>
+                  )}
+                  {params.district && (
+                    <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium border border-orange-100">
+                      <span>জেলা: {params.district}</span>
+                      <Link href={buildDirectoryHref(params, { district: '' })}><X className="h-3 w-3" /></Link>
+                    </div>
+                  )}
+                  {params.type && (
+                    <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium border border-orange-100">
+                      <span>ধরন: {params.type}</span>
+                      <Link href={buildDirectoryHref(params, { type: '' })}><X className="h-3 w-3" /></Link>
+                    </div>
+                  )}
+                  <Link href="/directory" className="text-xs text-red-500 font-bold hover:underline ml-2">সব মুছুন</Link>
+                </div>
+              )}
 
               {temples.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
