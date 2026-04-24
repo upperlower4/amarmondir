@@ -109,37 +109,24 @@ export async function POST(req: Request) {
     }
 
     const config = UPLOAD_CONFIG[type as keyof typeof UPLOAD_CONFIG];
-    let selectedQuality: number = config.quality;
-    let selectedResult: any = null;
 
-    const qualityAttempts = [config.quality, config.quality - 8, config.quality - 14, config.quality - 20, config.quality - 26].filter((value) => value > 18);
+    // Single upload attempt — no retry loop to avoid hanging on mobile/slow connections
+    const result = await cloudinary.uploader.upload(image, {
+      folder,
+      transformation: buildTransformation(type, config.quality),
+      format: 'webp',
+      resource_type: 'image',
+    });
 
-    for (const quality of qualityAttempts) {
-      const result = await cloudinary.uploader.upload(image, {
-        folder,
-        transformation: buildTransformation(type, quality),
-        format: 'webp',
-        resource_type: 'image',
-      });
-
-      selectedQuality = quality;
-      selectedResult = result;
-
-      const bytes = Number(result.bytes || 0);
-      if (!bytes || bytes <= config.maxKB * 1024) {
-        break;
-      }
-    }
-
-    if (!selectedResult?.secure_url) {
+    if (!result?.secure_url) {
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 
     return NextResponse.json({
-      url: selectedResult.secure_url,
+      url: result.secure_url,
       format: 'webp',
-      quality: selectedQuality,
-      sizeKB: selectedResult?.bytes ? Math.round(selectedResult.bytes / 1024) : null,
+      quality: config.quality,
+      sizeKB: result?.bytes ? Math.round(result.bytes / 1024) : null,
       targetKB: `${config.minKB}-${config.maxKB}`,
     });
   } catch (error: any) {
