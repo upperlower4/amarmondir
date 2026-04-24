@@ -59,6 +59,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   // Actual File objects (for direct Cloudinary upload)
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [galleryImageFiles, setGalleryImageFiles] = useState<File[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
