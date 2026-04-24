@@ -133,71 +133,50 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     setGalleryImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadImages = async () => {
-    console.log('Starting image upload process...');
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+
+  const uploadImages = async (onProgress?: (msg: string) => void) => {
     const uploadedUrls: { cover?: string; gallery: string[] } = { gallery: [] };
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
+    const { data: { session } } = await supabase.auth.getSession();
     const accessToken = session?.access_token;
-    if (!accessToken) {
-      throw new Error('আপনাকে আবার লগইন করতে হবে');
-    }
+    if (!accessToken) throw new Error('আপনাকে আবার লগইন করতে হবে');
 
     const uploadSingle = async (image: string, folder: string, type: 'cover' | 'gallery' | 'avatar', index?: number) => {
-      const label = index !== undefined ? `${type} ${index + 1}` : type;
-      console.log(`Starting upload for ${label}...`);
-      
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ image, folder, type }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error(`Upload failed for ${label}:`, data?.error);
-        throw new Error(data?.error || `${label} আপলোড ব্যর্থ হয়েছে`);
+      const label = index !== undefined ? `gallery ${index + 1}` : type;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ image, folder, type }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || `${label} আপলোড ব্যর্থ হয়েছে`);
+        return data.url as string;
+      } finally {
+        clearTimeout(timeout);
       }
-
-      console.log(`Successfully uploaded ${label}`);
-      return data.url as string;
     };
 
-    const uploadPromises: Promise<any>[] = [];
-
+    // Sequential uploads to avoid mobile network overload
     if (coverImage && typeof coverImage === 'string') {
-      uploadPromises.push(
-        uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover').then(url => {
-          uploadedUrls.cover = url;
-        })
-      );
+      onProgress?.('কভার ছবি আপলোড হচ্ছে...');
+      uploadedUrls.cover = await uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover');
     }
 
-    galleryImages.forEach((img, idx) => {
+    for (let idx = 0; idx < galleryImages.length; idx++) {
+      const img = galleryImages[idx];
       if (typeof img === 'string') {
-        uploadPromises.push(
-          uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery', idx).then(url => {
-            uploadedUrls.gallery.push(url);
-          })
-        );
+        onProgress?.(`গ্যালারি ছবি আপলোড হচ্ছে (${idx + 1}/${galleryImages.length})...`);
+        uploadedUrls.gallery.push(await uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery', idx));
       }
-    });
-
-    if (uploadPromises.length === 0) return uploadedUrls;
-
-    console.log(`Executing ${uploadPromises.length} parallel uploads...`);
-    await Promise.all(uploadPromises);
-    console.log('All images uploaded successfully');
+    }
 
     return uploadedUrls;
-  };
+  }
 
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
@@ -221,9 +200,9 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     console.log('onSubmit triggered with values:', values);
     setLoading(true);
     try {
-      toast.info('ছবি ও তথ্য আপলোড হচ্ছে, দয়া করে কিছুক্ষণ অপেক্ষা করুন...', { duration: 6000 });
-      console.log('Uploading images...');
-      const urls = await uploadImages();
+      setUploadStatus('আপলোড শুরু হচ্ছে...');
+      const urls = await uploadImages((msg) => setUploadStatus(msg));
+      setUploadStatus('');
       console.log('Images uploaded:', urls);
 
       const uuidFragment = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).substring(2, 10);
@@ -293,6 +272,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       });
     } finally {
       setLoading(false);
+      setUploadStatus('');
     }
   };
 
@@ -611,7 +591,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     পিছনে
                   </Button>
                   <Button type="submit" disabled={loading} className="bg-orange-600 h-12 px-12 rounded-xl text-lg flex items-center gap-2">
-                    {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> প্রসেসিং...</> : 'কনফার্ম ও সাবমিট'}
+                    {loading ? <><Loader2 className="h-5 w-5 animate-spin" /><span className="ml-2 text-sm">{uploadStatus || 'প্রসেসিং...'}</span></> : 'কনফার্ম ও সাবমিট'}
                   </Button>
                 </div>
               </CardContent>
