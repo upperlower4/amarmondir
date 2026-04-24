@@ -37,16 +37,59 @@ const formSchema = z.object({
   article_content: z.string().optional(),
 });
 
-const MAX_COVER_SIZE_MB = 5;
-const MAX_GALLERY_SIZE_MB = 5;
+const MAX_COVER_SIZE_MB = 10;
+const MAX_GALLERY_SIZE_MB = 10;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
-function fileToBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
+function compressImage(file: File, maxDimension = 1920): Promise<File> {
+  return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result || ''));
-    reader.onerror = reject;
     reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height *= maxDimension / width));
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width *= maxDimension / height));
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+                type: 'image/webp',
+                lastModified: Date.now(),
+              });
+              resolve(newFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/webp',
+          0.75
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
   });
 }
 
@@ -118,9 +161,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
           continue;
         }
 
-        validFiles.push(file);
+        const compressedFile = await compressImage(file, type === 'cover' ? 1920 : 1200);
+        validFiles.push(compressedFile);
         // Generate preview URL for display only
-        previewUrls.push(URL.createObjectURL(file));
+        previewUrls.push(URL.createObjectURL(compressedFile));
       }
 
       if (type === 'cover' && validFiles[0]) {
@@ -152,8 +196,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     label: string,
     onProgress: (msg: string) => void
   ): Promise<string> => {
-    // 1. Get signed params from our API
+    console.log(`[uploadFileDirect] starting for ${label}`, file);
     onProgress(`${label} প্রস্তুত করা হচ্ছে...`);
+    
+    console.log(`[uploadFileDirect] fetching signature for ${label}`);
     const signRes = await fetch('/api/upload-sign', {
       method: 'POST',
       headers: {
@@ -163,14 +209,16 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       body: JSON.stringify({ type }),
     });
 
+    console.log(`[uploadFileDirect] signature fetch done: ${signRes.status}`);
+
     if (!signRes.ok) {
-      const err = await signRes.json();
+      const err = await signRes.json().catch(() => ({}));
       throw new Error(err?.error || `${label} signature failed`);
     }
 
     const { signature, timestamp, folder, transformation, api_key, cloud_name } = await signRes.json();
+    console.log(`[uploadFileDirect] payload parsed for ${label}`);
 
-    // 2. Upload directly to Cloudinary with FormData and XHR for progress tracking
     const formData = new FormData();
     formData.append('file', file);
     formData.append('api_key', api_key);
@@ -179,60 +227,63 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     formData.append('folder', folder);
     formData.append('transformation', transformation);
 
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`);
-      
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          onProgress(`${label} আপলোড হচ্ছে (${percent}%)`);
-        }
-      };
+    onProgress(`${label} আপলোড হচ্ছে...`);
+    console.log(`[uploadFileDirect] posting to cloudinary for ${label}`);
 
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (!data.secure_url) reject(new Error(`${label} upload failed: no URL returned`));
-            else resolve(data.secure_url);
-          } catch (err) {
-            reject(new Error(`Invalid response for ${label}`));
-          }
-        } else {
-          try {
-            const err = JSON.parse(xhr.responseText);
-            reject(new Error(err?.error?.message || `${label} upload failed`));
-          } catch (e) {
-            reject(new Error(`${label} upload failed with status ${xhr.status}`));
-          }
-        }
-      };
+    try {
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      console.log(`[uploadFileDirect] cloudinary response status: ${uploadRes.status}`);
 
-      xhr.onerror = () => reject(new Error(`${label} upload network error`));
-      xhr.ontimeout = () => reject(new Error(`${label} upload timed out (network issue)`));
-      
-      xhr.timeout = 120000; // 2 minutes timeout for slow mobile networks
-      xhr.send(formData);
-    });
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `${label} upload response not ok`);
+      }
+
+      const data = await uploadRes.json();
+      console.log(`[uploadFileDirect] cloudinary parsed:`, data?.secure_url);
+      if (!data.secure_url) {
+        throw new Error(`${label} upload failed: no URL returned`);
+      }
+
+      return data.secure_url;
+    } catch (err: any) {
+      console.error(`[uploadFileDirect] exception posting to cloudinary:`, err);
+      throw new Error(err.message || `${label} upload failed due to network error`);
+    }
   };
 
   const uploadImages = async (onProgress: (msg: string) => void) => {
+    console.log('[uploadImages] starting...');
     const uploadedUrls: { cover?: string; gallery: string[] } = { gallery: [] };
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error('আপনাকে আবার লগইন করতে হবে');
+    try {
+      console.log('[uploadImages] fetching session...');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('আপনাকে আবার লগইন করতে হবে');
+      console.log('[uploadImages] session fetched.');
 
-    if (coverImageFile) {
-      uploadedUrls.cover = await uploadFileDirect(coverImageFile, 'cover', session, 'কভার ছবি', onProgress);
+      if (coverImageFile) {
+        console.log('[uploadImages] uploading cover...');
+        uploadedUrls.cover = await uploadFileDirect(coverImageFile, 'cover', session, 'কভার ছবি', onProgress);
+        console.log('[uploadImages] cover uploaded:', uploadedUrls.cover);
+      }
+
+      for (let idx = 0; idx < galleryImageFiles.length; idx++) {
+        console.log(`[uploadImages] uploading gallery image ${idx + 1}...`);
+        const url = await uploadFileDirect(galleryImageFiles[idx], 'gallery', session, `গ্যালারি ছবি ${idx + 1}`, onProgress);
+        uploadedUrls.gallery.push(url);
+        console.log(`[uploadImages] gallery image ${idx + 1} uploaded:`, url);
+      }
+
+      console.log('[uploadImages] finished:', uploadedUrls);
+      return uploadedUrls;
+    } catch (error) {
+      console.error('[uploadImages] caught error:', error);
+      throw error;
     }
-
-    for (let idx = 0; idx < galleryImageFiles.length; idx++) {
-      const url = await uploadFileDirect(galleryImageFiles[idx], 'gallery', session, `গ্যালারি ছবি ${idx + 1}`, onProgress);
-      uploadedUrls.gallery.push(url);
-    }
-
-    return uploadedUrls;
   };
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
