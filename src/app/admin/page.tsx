@@ -70,7 +70,7 @@ export default function AdminPage() {
           .eq('status', 'approved'),
         supabase
           .from('temples')
-          .select('id, title, status, created_at, upazila, district, profiles!temples_created_by_fkey(username)')
+          .select('id, slug, title, status, created_at, upazila, district, profiles!temples_created_by_fkey(username)')
           .order('created_at', { ascending: false })
           .limit(100),
         supabase
@@ -118,17 +118,22 @@ export default function AdminPage() {
   }, [profile, authLoading]);
 
   const handleModerateTemple = async (id: string, status: 'approved' | 'rejected') => {
+    console.log(`[handleModerateTemple] starting for id: ${id}, status: ${status}`);
     setProcessingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('আপনার লগইন সেশন এক্সপায়ার হয়েছে। দয়া করে আবার লগইন করুন।');
+      }
+      
       const res = await fetch('/api/admin/moderation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({ entity: 'temple', action: status === 'approved' ? 'approve' : 'reject', id })
       });
       
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP error: ${res.status}`);
 
       toast.success(status === 'approved' ? 'মন্দির এপ্রুভ করা হয়েছে' : 'মন্দির রিজেক্ট করা হয়েছে');
       
@@ -139,6 +144,7 @@ export default function AdminPage() {
         setStats(s => ({ ...s, approvedTemples: s.approvedTemples + 1 }));
       }
     } catch (error: any) {
+      console.error('[handleModerateTemple] error:', error);
       toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
     } finally {
       setProcessingId(null);
@@ -146,22 +152,28 @@ export default function AdminPage() {
   };
 
   const handleModerateEdit = async (editId: string, templeId: string, suggestedData: any, status: 'approved' | 'rejected') => {
+    console.log(`[handleModerateEdit] starting for editId: ${editId}`);
     setProcessingId(`edit-${editId}`);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('আপনার লগইন সেশন এক্সপায়ার হয়েছে। দয়া করে আবার লগইন করুন।');
+      }
+
       const res = await fetch('/api/admin/moderation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({ entity: 'edit', action: status === 'approved' ? 'approve' : 'reject', id: editId })
       });
       
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP error: ${res.status}`);
 
       toast.success(status === 'approved' ? 'এডিট এপ্রুভ করা হয়েছে' : 'এডিট রিজেক্ট করা হয়েছে');
       setPendingEdits((prev) => prev.filter((e) => e.id !== editId));
       setStats(s => ({ ...s, pendingEditCount: s.pendingEditCount - 1 }));
     } catch (error: any) {
+      console.error('[handleModerateEdit] error:', error);
       toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
     } finally {
       setProcessingId(null);
@@ -286,7 +298,7 @@ export default function AdminPage() {
                         </div>
                         <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded-lg mb-4">{temple.short_bio || 'বর্ণনা নেই'}</p>
                         <div className="flex justify-end gap-3">
-                          <Button variant="outline" asChild><Link href={`/temple/${temple.id}`} target="_blank">বিস্তারিত</Link></Button>
+                          <Button variant="outline" asChild><Link href={`/temple/${temple.slug}`} target="_blank">বিস্তারিত</Link></Button>
                           <Button variant="destructive" onClick={() => handleModerateTemple(temple.id, 'rejected')} disabled={processingId === temple.id}>রিজেক্ট</Button>
                           <Button className="bg-green-600 hover:bg-green-700" onClick={() => handleModerateTemple(temple.id, 'approved')} disabled={processingId === temple.id}>এপ্রুভ</Button>
                         </div>
@@ -358,7 +370,7 @@ export default function AdminPage() {
                             <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'} className={t.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}>{t.status.toUpperCase()}</Badge>
                           </td>
                           <td className="px-6 py-4 flex gap-2">
-                            <Button variant="ghost" size="sm" asChild className="h-8"><Link href={`/temple/${t.id}`} target="_blank">দেখুন</Link></Button>
+                            <Button variant="ghost" size="sm" asChild className="h-8"><Link href={`/temple/${t.slug}`} target="_blank">দেখুন</Link></Button>
                           </td>
                         </tr>
                       ))}

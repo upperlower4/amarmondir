@@ -22,14 +22,12 @@ export default function RootLayout({
 
   return (
     <html lang="bn">
-      <head>
+      <body className="min-h-screen flex flex-col">
         <script
           dangerouslySetInnerHTML={{
             __html: `window.ENV = { NEXT_PUBLIC_SUPABASE_URL: ${JSON.stringify(envUrl)}, NEXT_PUBLIC_SUPABASE_ANON_KEY: ${JSON.stringify(envAnonKey)} };`,
           }}
         />
-      </head>
-      <body className="min-h-screen flex flex-col">
         {children}
         <Toaster richColors position="top-right" />
       </body>

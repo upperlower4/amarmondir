@@ -10,6 +10,8 @@ import { TempleCard } from '@/components/TempleCard';
 import { ProfileActions } from './ProfileActions';
 import { formatJoinedDate } from '@/lib/utils';
 
+import { getLeaderboardProfiles } from '@/lib/contribution';
+
 export const dynamic = 'force-dynamic';
 
 async function getProfileData(username: string) {
@@ -25,44 +27,24 @@ async function getProfileData(username: string) {
     .filter((c: any) => c.temples && c.temples.status === 'approved' && c.temples.slug != null)
     .map((c: any) => c.temples);
 
-  const templeCount = (contributedTemples || []).filter((c: any) => c.contribution_type === 'original' && c.temples?.status === 'approved').length;
+  const leaders = await getLeaderboardProfiles();
+  const leaderData = leaders.find(l => l.id === profile.id);
+  const leaderboardRank = leaders.findIndex(l => l.id === profile.id) + 1;
 
-  const { data: approvedEdits, count: editCount } = await supabase
-    .from('temple_edits')
-    .select('profile_id', { count: 'exact' })
-    .eq('profile_id', profile.id)
-    .eq('status', 'approved');
-
-  const { data: profiles } = await supabase.from('profiles').select('id, username, temples_added, edits_made').order('created_at', { ascending: true });
-  const { data: allContributors } = await supabase.from('temple_contributors').select('profile_id, contribution_type, temples(status)');
-  const { data: allEdits } = await supabase.from('temple_edits').select('profile_id, status').eq('status', 'approved');
-
-  const formattedProfiles = (profiles || [])
-    .map((p) => {
-      const pTemples = (allContributors || []).filter(
-        (c: any) => c.profile_id === p.id && c.contribution_type === 'original' && c.temples?.status === 'approved'
-      ).length;
-      const pEdits = (allEdits || []).filter((e: any) => e.profile_id === p.id).length;
-      return {
-        ...p,
-        temples_added: Math.max(p.temples_added || 0, pTemples),
-        edits_made: Math.max(p.edits_made || 0, pEdits),
-      };
-    })
-    .sort((a, b) => {
-      if (b.temples_added !== a.temples_added) return b.temples_added - a.temples_added;
-      return b.edits_made - a.edits_made;
-    });
-
-  const leaderboardRank = formattedProfiles.findIndex((leader) => leader.id === profile.id) + 1;
+  const stats = {
+    temples_added: leaderData?.temples_added || 0,
+    edits_made: leaderData?.edits_made || 0,
+    score: leaderData?.score || 0,
+    leaderboardRank: leaderboardRank > 0 ? leaderboardRank : null,
+  };
 
   const dynamicProfile = {
     ...profile,
-    temples_added: Math.max(profile.temples_added || 0, templeCount),
-    edits_made: Math.max(profile.edits_made || 0, editCount || approvedEdits?.length || 0),
+    temples_added: stats.temples_added,
+    edits_made: stats.edits_made,
   };
 
-  return { profile: dynamicProfile, contributedTemples: approvedTemples, leaderboardRank: leaderboardRank || null };
+  return { profile: dynamicProfile, contributedTemples: approvedTemples, stats };
 }
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
@@ -70,7 +52,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const data = await getProfileData(username);
   if (!data) notFound();
 
-  const { profile, contributedTemples, leaderboardRank } = data;
+  const { profile, contributedTemples } = data;
+  const { score, leaderboardRank } = data.stats;
   const joinedDate = formatJoinedDate(profile.created_at);
   const profileInitial = (profile.username || profile.full_name || 'U').trim().charAt(0).toUpperCase() || 'U';
 
@@ -130,7 +113,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <StatCard icon={MapPin} label="মন্দির যোগ করা হয়েছে" value={profile.temples_added} color="text-orange-500" />
             <StatCard icon={Edit3} label="এডিট সাজেশন" value={profile.edits_made} color="text-blue-500" />
             <StatCard icon={Trophy} label="লিডারবোর্ড র‍্যাঙ্ক" value={leaderboardRank ? `#${leaderboardRank}` : 'N/A'} color="text-yellow-600" />
-            <StatCard icon={ShieldCheck} label="কন্ট্রিবিউশন স্কোর" value={profile.temples_added * 10 + profile.edits_made * 2} color="text-green-600" />
+            <StatCard icon={ShieldCheck} label="কন্ট্রিবিউশন স্কোর" value={score} color="text-green-600" />
           </div>
         </div>
 

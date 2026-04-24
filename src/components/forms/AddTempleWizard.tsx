@@ -41,55 +41,68 @@ const MAX_COVER_SIZE_MB = 10;
 const MAX_GALLERY_SIZE_MB = 10;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
-function compressImage(file: File, maxDimension = 1920): Promise<File> {
+function compressImage(file: File, maxDimension = 1920): Promise<File | Blob> {
   return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new window.Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-        if (width > height) {
-          if (width > maxDimension) {
-            height = Math.round((height *= maxDimension / width));
-            width = maxDimension;
-          }
-        } else {
-          if (height > maxDimension) {
-            width = Math.round((width *= maxDimension / height));
-            height = maxDimension;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
-                type: 'image/webp',
-                lastModified: Date.now(),
-              });
-              resolve(newFile);
+            if (width > height) {
+              if (width > maxDimension) {
+                height = Math.round((height *= maxDimension / width));
+                width = maxDimension;
+              }
             } else {
-              resolve(file);
+              if (height > maxDimension) {
+                width = Math.round((width *= maxDimension / height));
+                height = maxDimension;
+              }
             }
-          },
-          'image/webp',
-          0.75
-        );
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  try {
+                    const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                      type: 'image/jpeg',
+                      lastModified: Date.now(),
+                    });
+                    resolve(newFile);
+                  } catch (e) {
+                    // Fallback if File constructor isn't supported (old/in-app browsers)
+                    resolve(blob);
+                  }
+                } else {
+                  resolve(file);
+                }
+              },
+              'image/jpeg',
+              0.8
+            );
+          } catch(err) {
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
       };
-      img.onerror = () => resolve(file);
-    };
-    reader.onerror = () => resolve(file);
+      reader.onerror = () => resolve(file);
+    } catch(err) {
+      resolve(file);
+    }
   });
 }
 
@@ -100,8 +113,8 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   // Actual File objects (for direct Cloudinary upload)
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [galleryImageFiles, setGalleryImageFiles] = useState<File[]>([]);
+  const [coverImageFile, setCoverImageFile] = useState<File | Blob | null>(null);
+  const [galleryImageFiles, setGalleryImageFiles] = useState<(File | Blob)[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const router = useRouter();
 
@@ -145,7 +158,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     const maxSizeMb = type === 'cover' ? MAX_COVER_SIZE_MB : MAX_GALLERY_SIZE_MB;
 
     try {
-      const validFiles: File[] = [];
+      const validFiles: (File | Blob)[] = [];
       const previewUrls: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -190,7 +203,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
 
 
   const uploadFileDirect = async (
-    file: File,
+    file: File | Blob,
     type: 'cover' | 'gallery' | 'avatar',
     session: any,
     label: string,
@@ -220,7 +233,9 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     console.log(`[uploadFileDirect] payload parsed for ${label}`);
 
     const formData = new FormData();
-    formData.append('file', file);
+    // Default filename to 'image.jpg' in case it's a raw Blob
+    const filename = (file as any).name || 'image.jpg';
+    formData.append('file', file, filename);
     formData.append('api_key', api_key);
     formData.append('timestamp', String(timestamp));
     formData.append('signature', signature);
@@ -426,8 +441,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>মন্দিরের নাম (বাংলা)</FormLabel>
-                        <FormControl><Input placeholder="উদা: ঢাকেশ্বরী মন্দির" {...field} /></FormControl>
+                        <FormLabel className="text-gray-700 font-semibold">মন্দিরের নাম (বাংলা)</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4" placeholder="উদা: ঢাকেশ্বরী মন্দির" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -437,21 +454,23 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="english_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Temple Name (English)</FormLabel>
-                        <FormControl><Input placeholder="e.g. Dhakeshwari Temple" {...field} /></FormControl>
+                        <FormLabel className="text-gray-700 font-semibold">Temple Name (English)</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4 font-mono text-sm" placeholder="e.g. Dhakeshwari Temple" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                   <FormField
                     control={form.control}
                     name="division"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>বিভাগ</FormLabel>
+                        <FormLabel className="text-gray-700 font-semibold">বিভাগ</FormLabel>
                         <Select
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -460,10 +479,14 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="সিলেক্ট করুন" /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base">
+                              <SelectValue placeholder="সিলেক্ট করুন" />
+                            </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {DIVISIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          <SelectContent className="rounded-xl border border-gray-100 shadow-xl">
+                            <div className="max-h-[300px]">
+                              {DIVISIONS.map(d => <SelectItem key={d} value={d} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{d}</SelectItem>)}
+                            </div>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -475,13 +498,17 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="district"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>জেলা</FormLabel>
+                        <FormLabel className="text-gray-700 font-semibold">জেলা</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDivision}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="জেলা" /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50 disabled:bg-gray-100">
+                              <SelectValue placeholder="জেলা" />
+                            </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {selectedDivision && DISTRICTS[selectedDivision].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          <SelectContent className="rounded-xl border border-gray-100 shadow-xl">
+                            <div className="max-h-[300px]">
+                              {selectedDivision && DISTRICTS[selectedDivision].map(d => <SelectItem key={d} value={d} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{d}</SelectItem>)}
+                            </div>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -493,17 +520,21 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="upazila"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>উপজেলা</FormLabel>
+                        <FormLabel className="text-gray-700 font-semibold">উপজেলা</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDistrict}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="উপজেলা" /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50 disabled:bg-gray-100">
+                              <SelectValue placeholder="উপজেলা" />
+                            </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {selectedDistrict && UPAZILAS[selectedDistrict] ? (
-                              UPAZILAS[selectedDistrict].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)
-                            ) : (
-                              <SelectItem value="none" disabled>জেলা নির্বাচন করুন</SelectItem>
-                            )}
+                          <SelectContent className="rounded-xl border border-gray-100 shadow-xl">
+                            <div className="max-h-[300px]">
+                              {selectedDistrict && UPAZILAS[selectedDistrict] ? (
+                                UPAZILAS[selectedDistrict].map(u => <SelectItem key={u} value={u} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{u}</SelectItem>)
+                              ) : (
+                                <SelectItem value="none" disabled className="py-2.5">জেলা নির্বাচন করুন</SelectItem>
+                              )}
+                            </div>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -512,19 +543,23 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                   <FormField
                     control={form.control}
                     name="temple_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>মন্দিরের ধরন</FormLabel>
+                        <FormLabel className="text-gray-700 font-semibold">মন্দিরের ধরন</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="সিলেক্ট করুন" /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base">
+                              <SelectValue placeholder="সিলেক্ট করুন" />
+                            </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {TEMPLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                          <SelectContent className="rounded-xl border border-gray-100 shadow-xl">
+                             <div className="max-h-[300px]">
+                              {TEMPLE_TYPES.map(t => <SelectItem key={t} value={t} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{t}</SelectItem>)}
+                             </div>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -536,8 +571,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="deity"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>উপাস্য দেবতা</FormLabel>
-                        <FormControl><Input placeholder="উদা: শ্রী কৃষ্ণ" {...field} /></FormControl>
+                        <FormLabel className="text-gray-700 font-semibold">উপাস্য দেবতা (ঐচ্ছিক)</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4" placeholder="উদা: শ্রী কৃষ্ণ" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -615,14 +652,16 @@ export function AddTempleWizard({ userId }: { userId: string }) {
 
                 <hr className="border-gray-100" />
 
-                <div className="space-y-6">
+                <div className="space-y-6 pt-4">
                   <FormField
                     control={form.control}
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>পূর্ণাঙ্গ ঠিকানা</FormLabel>
-                        <FormControl><Input placeholder="উদা: ৫২ ঢাকেশ্বরী রোড, লালবাগ, ঢাকা ১২১১" {...field} /></FormControl>
+                        <FormLabel className="text-gray-700 font-semibold">পূর্ণাঙ্গ ঠিকানা</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4" placeholder="উদা: ৫২ ঢাকেশ্বরী রোড, লালবাগ, ঢাকা ১২১১" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -632,8 +671,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     name="map_link"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>গুগল ম্যাপ লিঙ্ক</FormLabel>
-                        <FormControl><Input placeholder="https://maps.app.goo.gl/..." {...field} /></FormControl>
+                        <FormLabel className="text-gray-700 font-semibold">গুগল ম্যাপ লিঙ্ক (ঐচ্ছিক)</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4 font-mono text-sm" placeholder="https://maps.app.goo.gl/..." {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -661,8 +702,10 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   name="short_bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>সংক্ষিপ্ত ভূমিকা</FormLabel>
-                      <FormControl><Textarea placeholder="মন্দির সম্পর্কে সংক্ষেপে ২-৩ লাইনে লিখুন..." className="h-32 rounded-2xl" {...field} /></FormControl>
+                      <FormLabel className="text-gray-700 font-semibold">সংক্ষিপ্ত ভূমিকা</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="মন্দির সম্পর্কে সংক্ষেপে ২-৩ লাইনে লিখুন..." className="h-32 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base p-4 resize-none" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -674,10 +717,12 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                        <FormLabel>বিস্তারিত ইতিহাস / নিবন্ধ</FormLabel>
-                        <span className="text-[10px] uppercase font-bold text-gray-400 italic">Optional but Recommended</span>
+                        <FormLabel className="text-gray-700 font-semibold">বিস্তারিত ইতিহাস / নিবন্ধ</FormLabel>
+                        <span className="text-[10px] uppercase font-bold text-gray-400 italic bg-gray-100 px-2 py-1 rounded-md">Optional</span>
                       </div>
-                      <FormControl><Textarea placeholder="মন্দিরের ইতিহাস, স্থাপত্য এবং অন্যান্য বিস্তারিত তথ্য এখানে লিখুন..." className="min-h-[300px] rounded-2xl p-6" {...field} /></FormControl>
+                      <FormControl>
+                        <Textarea placeholder="মন্দিরের ইতিহাস, স্থাপত্য এবং অন্যান্য বিস্তারিত তথ্য এখানে লিখুন..." className="min-h-[300px] bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base p-6" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
