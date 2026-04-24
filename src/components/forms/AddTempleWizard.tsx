@@ -53,8 +53,12 @@ function fileToBase64(file: File) {
 export function AddTempleWizard({ userId }: { userId: string }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  // Preview URLs (for display)
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  // Actual File objects (for direct Cloudinary upload)
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [galleryImageFiles, setGalleryImageFiles] = useState<File[]>([]);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -97,7 +101,8 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     const maxSizeMb = type === 'cover' ? MAX_COVER_SIZE_MB : MAX_GALLERY_SIZE_MB;
 
     try {
-      const nextImages: string[] = [];
+      const validFiles: File[] = [];
+      const previewUrls: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -112,72 +117,99 @@ export function AddTempleWizard({ userId }: { userId: string }) {
           continue;
         }
 
-        const base64 = await fileToBase64(file);
-        nextImages.push(base64);
+        validFiles.push(file);
+        // Generate preview URL for display only
+        previewUrls.push(URL.createObjectURL(file));
       }
 
-      if (type === 'cover') {
-        setCoverImage(nextImages[0] || null);
-      } else if (nextImages.length > 0) {
-        setGalleryImages((prev) => [...prev, ...nextImages].slice(0, 8));
+      if (type === 'cover' && validFiles[0]) {
+        setCoverImageFile(validFiles[0]);
+        setCoverImage(previewUrls[0]);
+      } else if (type === 'gallery' && validFiles.length > 0) {
+        setGalleryImageFiles(prev => [...prev, ...validFiles].slice(0, 8));
+        setGalleryImages(prev => [...prev, ...previewUrls].slice(0, 8));
       }
     } catch (err: any) {
-      console.error('Image read error:', safeJsonStringify(err));
-      toast.error('ছবি প্রসেস করা যায়নি');
+      console.error('Image read error:', err);
+      toast.error('ছবি প্রসেস করা যায়নি');
     } finally {
       e.target.value = '';
     }
   };
 
+
   const removeGalleryImage = (index: number) => {
     setGalleryImages(prev => prev.filter((_, i) => i !== index));
+    setGalleryImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const [uploadStatus, setUploadStatus] = useState<string>('');
 
-  const uploadImages = async (onProgress?: (msg: string) => void) => {
+  const uploadFileDirect = async (
+    file: File,
+    type: 'cover' | 'gallery' | 'avatar',
+    session: any,
+    label: string,
+  ): Promise<string> => {
+    // 1. Get signed params from our API (tiny request, no image data)
+    const signRes = await fetch('/api/upload-sign', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ type }),
+    });
+
+    if (!signRes.ok) {
+      const err = await signRes.json();
+      throw new Error(err?.error || `${label} signature failed`);
+    }
+
+    const { signature, timestamp, folder, transformation, api_key, cloud_name } = await signRes.json();
+
+    // 2. Upload directly to Cloudinary with FormData
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', api_key);
+    formData.append('timestamp', String(timestamp));
+    formData.append('signature', signature);
+    formData.append('folder', folder);
+    formData.append('transformation', transformation);
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json();
+      throw new Error(err?.error?.message || `${label} upload failed`);
+    }
+
+    const data = await uploadRes.json();
+    if (!data.secure_url) throw new Error(`${label} upload failed: no URL returned`);
+    return data.secure_url as string;
+  };
+
+  const uploadImages = async (onProgress: (msg: string) => void) => {
     const uploadedUrls: { cover?: string; gallery: string[] } = { gallery: [] };
 
     const { data: { session } } = await supabase.auth.getSession();
-    const accessToken = session?.access_token;
-    if (!accessToken) throw new Error('আপনাকে আবার লগইন করতে হবে');
+    if (!session?.access_token) throw new Error('আপনাকে আবার লগইন করতে হবে');
 
-    const uploadSingle = async (image: string, folder: string, type: 'cover' | 'gallery' | 'avatar', index?: number) => {
-      const label = index !== undefined ? `gallery ${index + 1}` : type;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000);
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ image, folder, type }),
-          signal: controller.signal,
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || `${label} আপলোড ব্যর্থ হয়েছে`);
-        return data.url as string;
-      } finally {
-        clearTimeout(timeout);
-      }
-    };
-
-    // Sequential uploads to avoid mobile network overload
-    if (coverImage && typeof coverImage === 'string') {
-      onProgress?.('কভার ছবি আপলোড হচ্ছে...');
-      uploadedUrls.cover = await uploadSingle(coverImage, CLOUDINARY_FOLDERS.COVERS, 'cover');
+    if (coverImageFile) {
+      onProgress('কভার ছবি আপলোড হচ্ছে...');
+      uploadedUrls.cover = await uploadFileDirect(coverImageFile, 'cover', session, 'Cover');
     }
 
-    for (let idx = 0; idx < galleryImages.length; idx++) {
-      const img = galleryImages[idx];
-      if (typeof img === 'string') {
-        onProgress?.(`গ্যালারি ছবি আপলোড হচ্ছে (${idx + 1}/${galleryImages.length})...`);
-        uploadedUrls.gallery.push(await uploadSingle(img, CLOUDINARY_FOLDERS.GALLERY, 'gallery', idx));
-      }
+    for (let idx = 0; idx < galleryImageFiles.length; idx++) {
+      onProgress(`গ্যালারি ছবি আপলোড হচ্ছে (${idx + 1}/${galleryImageFiles.length})...`);
+      const url = await uploadFileDirect(galleryImageFiles[idx], 'gallery', session, `Gallery ${idx + 1}`);
+      uploadedUrls.gallery.push(url);
     }
 
     return uploadedUrls;
-  }
-
+  };
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
     if (step === 1) {
@@ -201,8 +233,8 @@ export function AddTempleWizard({ userId }: { userId: string }) {
     setLoading(true);
     try {
       setUploadStatus('আপলোড শুরু হচ্ছে...');
+      console.log('Uploading images...');
       const urls = await uploadImages((msg) => setUploadStatus(msg));
-      setUploadStatus('');
       console.log('Images uploaded:', urls);
 
       const uuidFragment = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).substring(2, 10);
