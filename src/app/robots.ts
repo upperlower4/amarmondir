@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://amarmondir.vercel.app'; // Default fallback
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://amarmondir.nav.bd'; // Default fallback
 
   return {
     rules: [

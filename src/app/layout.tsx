@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'amarmondir | Bangladesh Temple Directory',
     description: 'Explore and contribute to the database of temples in Bangladesh.',
-    url: 'https://amarmondir.vercel.app',
+    url: 'https://amarmondir.nav.bd',
     siteName: 'amarmondir',
     locale: 'bn_BD',
     type: 'website',
