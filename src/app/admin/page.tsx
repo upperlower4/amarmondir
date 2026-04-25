@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BackButton } from '@/components/BackButton';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -202,8 +203,9 @@ export default function AdminPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 bg-gray-50/50 py-8 md:py-12 min-h-[80vh]">
+      <main className="flex-1 bg-gray-50/50 py-6 md:py-12 min-h-[80vh]">
         <div className="container mx-auto px-4">
+          <BackButton className="mb-6" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold mb-3">

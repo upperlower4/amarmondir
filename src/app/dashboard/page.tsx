@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { BackButton } from '@/components/BackButton';
 import { POINTS } from '@/lib/contribution';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,8 +122,9 @@ export default function DashboardPage() {
     photos.filter(p => p.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <BackButton className="mb-6" />
         <div className="flex items-center gap-3 mb-8 text-gray-900 border-b pb-6">
           <div className="bg-orange-100 p-3 rounded-2xl">
             <LayoutDashboard className="w-8 h-8 text-orange-600" />

@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BackButton } from '@/components/BackButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -62,7 +63,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       <Navbar />
       <main className="flex-1 bg-gray-50/50">
         <div className="bg-white border-b">
-          <div className="container mx-auto px-4 py-10 md:py-16">
+          <div className="container mx-auto px-4 py-6 sm:py-10">
+            <BackButton className="mb-6" />
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
               <div className="relative shrink-0">
                 <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white shadow-2xl">

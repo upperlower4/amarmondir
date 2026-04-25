@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BackButton } from '@/components/BackButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Sparkles, Star } from 'lucide-react';
@@ -16,7 +17,8 @@ export default async function LeaderboardPage() {
     <>
       <Navbar />
       <main className="flex-1 bg-[#fcfaf7]">
-        <div className="container mx-auto px-4 py-10 md:py-16">
+        <div className="container mx-auto px-4 py-6 sm:py-10">
+          <BackButton className="mb-6" />
           <div className="text-center mb-10 md:mb-14">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6 border border-orange-200">
               <Trophy className="h-4 w-4" />

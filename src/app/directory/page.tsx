@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BackButton } from '@/components/BackButton';
 import { TempleCard } from '@/components/TempleCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,8 @@ export default async function DirectoryPage({ searchParams }: DirectoryPageProps
     <>
       <Navbar />
       <main className="flex-1 bg-gray-50/50">
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-6 sm:py-12">
+          <BackButton className="mb-6" />
           <div className="flex flex-col md:flex-row gap-8">
             {/* Filters Sidebar (Desktop) */}
             <aside className="hidden md:block w-64 space-y-8 bg-white p-6 rounded-2xl border h-fit shrink-0 overflow-y-auto max-h-[calc(100vh-8rem)] sticky top-24">
