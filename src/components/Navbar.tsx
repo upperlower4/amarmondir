@@ -21,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -55,7 +55,9 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {user ? (
+          {loading ? (
+             <div className="h-10 w-10 sm:w-32 animate-pulse bg-gray-200 rounded-full sm:rounded-md"></div>
+          ) : user ? (
             <>
               <Button asChild size="sm" className="hidden sm:flex items-center gap-1.5 px-3 bg-orange-500 hover:bg-orange-600 whitespace-nowrap">
                 <Link href="/add-temple" className="flex items-center gap-1.5">
