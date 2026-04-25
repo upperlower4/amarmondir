@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         const status = action === 'approve' ? 'approved' : 'rejected';
         const { data: templesData } = await admin.from('temples').select('id, created_by').in('id', targetIds);
         
-        const { error } = await admin.from('temples').update({ status, moderation_reason: note || null }).in('id', targetIds);
+        const { error } = await admin.from('temples').update({ status }).in('id', targetIds);
         if (error) throw error;
 
         for (const t of templesData || []) {
