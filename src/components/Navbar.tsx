@@ -16,7 +16,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck } from 'lucide-react';
+import { Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck, LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +86,12 @@ export function Navbar() {
                     </div>
                     <hr className="my-1 border-gray-100" />                
                     <DropdownMenuItem asChild>
-                      <Link href="/add-temple" className="flex items-center gap-2 text-orange-600 font-bold">
+                      <Link href="/dashboard" className="flex items-center gap-2 text-orange-600 font-bold">
+                        <LayoutDashboard className="h-4 w-4" /> ড্যাশবোর্ড
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/add-temple" className="flex items-center gap-2">
                         <Plus className="h-4 w-4" /> নতুন মন্দির
                       </Link>
                     </DropdownMenuItem>
@@ -148,7 +153,10 @@ export function Navbar() {
                           </div>
                         </div>
                         <hr className="my-2" />
-                        <Link href="/add-temple" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold text-orange-600">
+                        <Link href="/dashboard" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold text-orange-600">
+                          <LayoutDashboard className="h-4 w-4" /> ড্যাশবোর্ড
+                        </Link>
+                        <Link href="/add-temple" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
                           <Plus className="h-4 w-4" /> নতুন মন্দির
                         </Link>
                         <Link href={`/profile/${profile?.username}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
