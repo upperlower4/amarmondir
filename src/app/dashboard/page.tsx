@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle2, XCircle, LayoutDashboard, FileEdit, ImageIcon, MapPin, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -162,130 +163,138 @@ export default function DashboardPage() {
         </div>
 
         <Tabs defaultValue="temples" className="w-full">
-          <TabsList className="grid w-full mb-8" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-            <TabsTrigger value="temples" className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" /> আমার যুক্ত করা মন্দির <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs ml-1">{temples.length}</span>
+          <TabsList className="grid w-full mb-8 grid-cols-1 sm:grid-cols-3 gap-2 h-auto bg-transparent p-0">
+            <TabsTrigger value="temples" className="flex items-center gap-2 py-3 bg-gray-100 data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-gray-200">
+              <MapPin className="w-4 h-4" /> আমার যুক্ত করা মন্দির <span className="bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs ml-1">{temples.length}</span>
             </TabsTrigger>
-            <TabsTrigger value="edits" className="flex items-center gap-2">
-              <FileEdit className="w-4 h-4" /> এডিট সাজেশন <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs ml-1">{edits.length}</span>
+            <TabsTrigger value="edits" className="flex items-center gap-2 py-3 bg-gray-100 data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-gray-200">
+              <FileEdit className="w-4 h-4" /> এডিট সাজেশন <span className="bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs ml-1">{edits.length}</span>
             </TabsTrigger>
-            <TabsTrigger value="photos" className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" /> ফোটো অবদান <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs ml-1">{photos.length}</span>
+            <TabsTrigger value="photos" className="flex items-center gap-2 py-3 bg-gray-100 data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-gray-200">
+              <ImageIcon className="w-4 h-4" /> ফোটো অবদান <span className="bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs ml-1">{photos.length}</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="temples" className="space-y-4">
+          <TabsContent value="temples" className="space-y-4 focus-visible:outline-none">
             {temples.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
                 <p className="text-gray-500 mb-4">আপনি এখনো কোনো মন্দির যুক্ত করেননি</p>
                 <Link href="/add-temple" className="text-orange-600 font-medium hover:underline">নতুন মন্দির যুক্ত করুন</Link>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-                    <tr>
-                      <th className="px-6 py-4">মন্দির</th>
-                      <th className="px-6 py-4">তারিখ</th>
-                      <th className="px-6 py-4">স্ট্যাটাস</th>
-                      <th className="px-6 py-4">পয়েন্ট</th>
-                      <th className="px-6 py-4">মন্তব্য</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {temples.map((temple) => (
-                      <tr key={temple.id} className="hover:bg-gray-50/50">
-                        <td className="px-6 py-4 font-medium">
-                          {temple.slug && temple.status === 'approved' ? (
-                            <Link href={`/temple/${temple.slug}`} className="text-blue-600 hover:underline">{temple.title}</Link>
-                          ) : (
-                            <span className="text-gray-900">{temple.title}</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">{new Date(temple.created_at).toLocaleDateString('bn-BD')}</td>
-                        <td className="px-6 py-4">{getStatusBadge(temple.status)}</td>
-                        <td className="px-6 py-4">{getPointsDisplay(temple.status, POINTS.TEMPLE_ADD)}</td>
-                        <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={temple.moderation_reason || ''}>
-                          {temple.moderation_reason || '-'}
-                        </td>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100 whitespace-nowrap">
+                      <tr>
+                        <th className="px-6 py-4">মন্দির</th>
+                        <th className="px-6 py-4">তারিখ</th>
+                        <th className="px-6 py-4">স্ট্যাটাস</th>
+                        <th className="px-6 py-4">পয়েন্ট</th>
+                        <th className="px-6 py-4">মন্তব্য</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {temples.map((temple) => (
+                        <tr key={temple.id} className="hover:bg-gray-50/50">
+                          <td className="px-6 py-4 font-medium whitespace-nowrap">
+                            {temple.slug && temple.status === 'approved' ? (
+                              <Link href={`/temple/${temple.slug}`} className="text-blue-600 hover:underline">{temple.title}</Link>
+                            ) : (
+                              <span className="text-gray-900">{temple.title}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(temple.created_at).toLocaleDateString('bn-BD')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(temple.status)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(temple.status, POINTS.TEMPLE_ADD)}</td>
+                          <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={temple.moderation_reason || ''}>
+                            {temple.moderation_reason || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="edits" className="space-y-4">
+          <TabsContent value="edits" className="space-y-4 focus-visible:outline-none">
             {edits.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
                 <p className="text-gray-500">আপনার কোনো এডিট সাজেশন নেই</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-                    <tr>
-                      <th className="px-6 py-4">মন্দির</th>
-                      <th className="px-6 py-4">তারিখ</th>
-                      <th className="px-6 py-4">স্ট্যাটাস</th>
-                      <th className="px-6 py-4">পয়েন্ট</th>
-                      <th className="px-6 py-4">মন্তব্য</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {edits.map((edit) => (
-                      <tr key={edit.id} className="hover:bg-gray-50/50">
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {edit.temples?.title || 'Unknown Temple'}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">{new Date(edit.created_at).toLocaleDateString('bn-BD')}</td>
-                        <td className="px-6 py-4">{getStatusBadge(edit.status)}</td>
-                        <td className="px-6 py-4">{getPointsDisplay(edit.status, POINTS.EDIT_APPROVED)}</td>
-                        <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={edit.moderator_note || ''}>
-                          {edit.moderator_note || '-'}
-                        </td>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100 whitespace-nowrap">
+                      <tr>
+                        <th className="px-6 py-4">মন্দির</th>
+                        <th className="px-6 py-4">তারিখ</th>
+                        <th className="px-6 py-4">স্ট্যাটাস</th>
+                        <th className="px-6 py-4">পয়েন্ট</th>
+                        <th className="px-6 py-4">মন্তব্য</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {edits.map((edit) => (
+                        <tr key={edit.id} className="hover:bg-gray-50/50">
+                          <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                            {edit.temples?.title || 'Unknown Temple'}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(edit.created_at).toLocaleDateString('bn-BD')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(edit.status)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(edit.status, POINTS.EDIT_APPROVED)}</td>
+                          <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={edit.moderator_note || ''}>
+                            {edit.moderator_note || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="photos" className="space-y-4">
+          <TabsContent value="photos" className="space-y-4 focus-visible:outline-none">
             {photos.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
                 <p className="text-gray-500">আপনার কোনো ফোটো অবদান নেই</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-                    <tr>
-                      <th className="px-6 py-4">ছবি</th>
-                      <th className="px-6 py-4">মন্দির</th>
-                      <th className="px-6 py-4">তারিখ</th>
-                      <th className="px-6 py-4">স্ট্যাটাস</th>
-                      <th className="px-6 py-4">পয়েন্ট</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {photos.map((photo) => (
-                      <tr key={photo.id} className="hover:bg-gray-50/50">
-                        <td className="px-6 py-4">
-                          <img src={photo.url} alt="Temple" className="w-16 h-12 object-cover rounded-lg" />
-                        </td>
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {photo.temples?.title || 'Unknown Temple'}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">{new Date(photo.created_at).toLocaleDateString('bn-BD')}</td>
-                        <td className="px-6 py-4">{getStatusBadge(photo.status)}</td>
-                        <td className="px-6 py-4">{getPointsDisplay(photo.status, POINTS.PHOTO_APPROVED)}</td>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100 whitespace-nowrap">
+                      <tr>
+                        <th className="px-6 py-4">ছবি</th>
+                        <th className="px-6 py-4">মন্দির</th>
+                        <th className="px-6 py-4">তারিখ</th>
+                        <th className="px-6 py-4">স্ট্যাটাস</th>
+                        <th className="px-6 py-4">পয়েন্ট</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {photos.map((photo) => (
+                        <tr key={photo.id} className="hover:bg-gray-50/50">
+                          <td className="px-6 py-4">
+                            <div className="relative w-16 h-12">
+                              <Image src={photo.url} alt="Temple" fill className="object-cover rounded-lg" referrerPolicy="no-referrer" />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                            {photo.temples?.title || 'Unknown Temple'}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(photo.created_at).toLocaleDateString('bn-BD')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(photo.status)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(photo.status, POINTS.PHOTO_APPROVED)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </TabsContent>
