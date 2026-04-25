@@ -14,29 +14,47 @@ export function useAuth() {
     let isActive = true;
 
     const fetchProfile = async (userId: string) => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-      if (!isActive) return;
-      setProfile(data || null);
-      setLoading(false);
+      try {
+        const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (!isActive) return;
+        setProfile(data || null);
+      } catch (err) {
+        console.error('fetchProfile error', err);
+      } finally {
+        if (isActive) setLoading(false);
+      }
     };
 
     const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      // Safety timeout to ensure loading doesn't get stuck forever in some iframe environments
+      const timeout = setTimeout(() => {
+        if (isActive && loading) {
+          console.warn('Auth initialization timed out');
+          setLoading(false);
+        }
+      }, 5000);
 
-      if (!isActive) return;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session) {
-        document.cookie = `amarmondir-auth-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      }
+        if (!isActive) return;
 
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Auth init error', err);
+        if (isActive) {
+          setLoading(false);
+        }
+      } finally {
+        clearTimeout(timeout);
       }
     };
 
@@ -47,19 +65,17 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isActive) return;
 
-      // Sync session to cookie for middleware
-      if (session) {
-        document.cookie = `amarmondir-auth-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      } else {
-        document.cookie = 'amarmondir-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      }
-
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+      try {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('onAuthStateChange error', err);
+        if (isActive) setLoading(false);
       }
     });
 

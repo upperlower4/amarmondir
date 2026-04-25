@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 import { sanitizeUsername } from '@/lib/utils';
 
+import Image from 'next/image';
+
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +52,7 @@ export default function SignupPage() {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -65,10 +67,18 @@ export default function SignupPage() {
         throw error;
       }
 
-      toast.success('রেজিস্ট্রেশন সফল হয়েছে!', {
-        description: 'দয়া করে আপনার ইমেইলের ইনবক্স চেক করুন এবং ভেরিফিকেশন লিংকে ক্লিক করুন। এরপরেই আপনি লগ ইন করতে পারবেন।',
-      });
-      router.push('/login');
+      toast.success('রেজিস্ট্রেশন সফল হয়েছে!');
+      
+      // If we have a session, we are logged in. If not, we might need confirmation.
+      // But the user wants direct access.
+      if (data.session) {
+        window.location.href = `/profile/${cleanUsername}`;
+      } else {
+        // If confirmation is required, we still redirect to profile, 
+        // but they might not be "logged in" state until they confirm.
+        // For now, let's try to go to profile.
+        router.push(`/profile/${cleanUsername}`);
+      }
     } catch (error: any) {
       let errorMsg = String(error?.message || error);
       
@@ -88,10 +98,17 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7] px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-200">
-            <MapPin className="h-8 w-8" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight font-serif">amarmondir</h1>
+          <Link href="/">
+            <Image 
+              src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" 
+              alt="Amar Mondir" 
+              width={240} 
+              height={42} 
+              className="h-10 w-auto mb-2" 
+              priority
+              referrerPolicy="no-referrer"
+            />
+          </Link>
           <p className="text-muted-foreground bengali-text">নতুন কমিউনিটি মেম্বার হিসেবে জয়েন করুন</p>
         </div>
 

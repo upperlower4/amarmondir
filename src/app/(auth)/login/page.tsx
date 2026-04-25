@@ -11,6 +11,8 @@ import { supabase, isConfigured } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 
+import Image from 'next/image';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,8 +42,7 @@ export default function LoginPage() {
       }
 
       toast.success('সফলভাবে লগ ইন করেছেন');
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     } catch (error: any) {
       let errorMsg = String(error?.message || error);
       
@@ -61,10 +62,17 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7] px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-200">
-            <MapPin className="h-8 w-8" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight font-serif">amarmondir</h1>
+          <Link href="/">
+            <Image 
+              src="https://res.cloudinary.com/dhavfhslp/image/upload/v1776825082/horizontal_logo_ysoot5.png" 
+              alt="Amar Mondir" 
+              width={240} 
+              height={42} 
+              className="h-10 w-auto mb-2" 
+              priority
+              referrerPolicy="no-referrer"
+            />
+          </Link>
           <p className="text-muted-foreground bengali-text">Welcome to Temple Directory</p>
         </div>
 
