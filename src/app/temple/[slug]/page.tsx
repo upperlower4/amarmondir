@@ -123,6 +123,24 @@ export default async function TemplePage({ params, searchParams }: Props) {
 
   return (
     <TempleEditProvider>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Place",
+            "name": temple.title,
+            "description": temple.short_bio,
+            "image": temple.cover_image,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": temple.upazila,
+              "addressRegion": temple.district,
+              "addressCountry": "BD"
+            }
+          })
+        }}
+      />
       <Navbar />
       <main className="flex-1 bg-white relative selection:bg-orange-100 selection:text-orange-900">
         

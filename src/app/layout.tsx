@@ -3,11 +3,28 @@ import './globals.css';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'amarmondir | Bangladesh Temple Directory',
-  description: 'Explore and contribute to the database of temples in Bangladesh.',
+  title: {
+    default: 'amarmondir | Bangladesh Temple Directory',
+    template: '%s | amarmondir'
+  },
+  description: 'বাংলাদেশের সকল মন্দিরের তথ্য ও অবস্থান সরাসরি খুঁজে পেতে ভিজিট করুন অমর মন্দির ডিরেক্টরিতে।',
+  keywords: ['temple', 'bangladesh', 'directory', 'hindu', 'mondir', 'religion', 'heritage'],
   icons: {
     icon: 'https://res.cloudinary.com/dhavfhslp/image/upload/v1776825083/appicon_biqz1v.png',
     apple: 'https://res.cloudinary.com/dhavfhslp/image/upload/v1776825083/appicon_biqz1v.png',
+  },
+  openGraph: {
+    title: 'amarmondir | Bangladesh Temple Directory',
+    description: 'Explore and contribute to the database of temples in Bangladesh.',
+    url: 'https://amarmondir.vercel.app',
+    siteName: 'amarmondir',
+    locale: 'bn_BD',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'amarmondir | Bangladesh Temple Directory',
+    description: 'Explore and contribute to the database of temples in Bangladesh.',
   },
 };
 
