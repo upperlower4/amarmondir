@@ -475,6 +475,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                           onValueChange={(value) => {
                             field.onChange(value);
                             form.setValue('district', '');
+                            form.setValue('upazila', '');
                           }}
                           value={field.value}
                         >
@@ -499,7 +500,14 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-gray-700 font-semibold">জেলা</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDivision}>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('upazila', '');
+                          }}
+                          value={field.value}
+                          disabled={!selectedDivision}
+                        >
                           <FormControl>
                             <SelectTrigger className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-base disabled:opacity-50 disabled:bg-gray-100">
                               <SelectValue placeholder="জেলা" />
@@ -507,7 +515,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                           </FormControl>
                           <SelectContent className="rounded-xl border border-gray-100 shadow-xl">
                             <div className="max-h-[300px]">
-                              {selectedDivision && DISTRICTS[selectedDivision].map(d => <SelectItem key={d} value={d} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{d}</SelectItem>)}
+                              {selectedDivision && (DISTRICTS[selectedDivision] || []).map(d => <SelectItem key={d} value={d} className="rounded-lg cursor-pointer py-2.5 px-3 hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-900 transition-colors">{d}</SelectItem>)}
                             </div>
                           </SelectContent>
                         </Select>

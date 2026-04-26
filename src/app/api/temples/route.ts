@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { safeJsonStringify, generateSlug, normalizeSearchText } from '@/lib/utils';
 import { createClient } from '@supabase/supabase-js';
+import { DISTRICTS } from '@/lib/constants';
+import { UPAZILAS } from '@/lib/upazilas';
 
 function makeTempleSlug(rawSlug: string, englishName: string) {
   const base = generateSlug(rawSlug || englishName || 'temple');
@@ -40,6 +42,17 @@ export async function POST(req: Request) {
 
     if (!cleanValues?.title || !cleanValues?.english_name || !cleanValues?.division || !cleanValues?.district || !cleanValues?.upazila || !cleanValues?.temple_type || !cleanValues?.address) {
       return NextResponse.json({ error: 'Missing required temple fields' }, { status: 400 });
+    }
+
+    const selectedDistricts = DISTRICTS[String(cleanValues.division)] || [];
+    const selectedUpazilas = UPAZILAS[String(cleanValues.district)] || [];
+
+    if (!selectedDistricts.includes(String(cleanValues.district))) {
+      return NextResponse.json({ error: 'বিভাগ অনুযায়ী সঠিক জেলা নির্বাচন করুন' }, { status: 400 });
+    }
+
+    if (!selectedUpazilas.includes(String(cleanValues.upazila))) {
+      return NextResponse.json({ error: 'জেলা অনুযায়ী সঠিক উপজেলা নির্বাচন করুন' }, { status: 400 });
     }
 
     const adminClient = getSupabaseAdmin();

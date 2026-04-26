@@ -94,8 +94,8 @@ export const UPAZILAS: Record<string, string[]> = {
     "Raozan",
     "Karnafuli"
   ],
-  "Coxsbazar": [
-    "Coxsbazar Sadar",
+  "Cox\'s Bazar": [
+    "Cox\'s Bazar Sadar",
     "Chakaria",
     "Kutubdia",
     "Ukhiya",
@@ -188,7 +188,7 @@ export const UPAZILAS: Record<string, string[]> = {
     "Panchbibi",
     "Joypurhat Sadar"
   ],
-  "Chapainawabganj": [
+  "Chapai Nawabganj": [
     "Chapainawabganj Sadar",
     "Gomostapur",
     "Nachol",
@@ -287,7 +287,7 @@ export const UPAZILAS: Record<string, string[]> = {
     "Kotchandpur",
     "Moheshpur"
   ],
-  "Jhalakathi": [
+  "Jhalokati": [
     "Jhalakathi Sadar",
     "Kathalia",
     "Nalchity",
