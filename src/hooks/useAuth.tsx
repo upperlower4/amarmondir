@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
@@ -65,8 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const activeRequest = useRef(0);
+  const currentUserId = useRef<string | null>(null);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string) => {
     const requestId = ++activeRequest.current;
 
     const { data, error } = await supabase
@@ -84,20 +85,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setProfile(data || null);
-  };
+  }, []);
 
-  const applySession = async (nextSession: Session | null) => {
+  const applySession = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
+    
+    const nextUserId = nextSession?.user?.id ?? null;
     writeAuthCookie(nextSession);
 
-    if (nextSession?.user) {
-      await loadProfile(nextSession.user.id);
+    if (nextUserId) {
+      if (nextUserId !== currentUserId.current) {
+        currentUserId.current = nextUserId;
+        await loadProfile(nextUserId);
+      }
     } else {
       activeRequest.current += 1;
+      currentUserId.current = null;
       setProfile(null);
     }
-  };
+  }, [loadProfile]);
 
   useEffect(() => {
     let isMounted = true;
@@ -132,10 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) return;
 
-      setLoading(true);
+      const nextUserId = nextSession?.user?.id ?? null;
+      
+      // Prevent full page unmount/refresh on tab focus (token refresh) if user is the same
+      if (currentUserId.current !== nextUserId || event === 'SIGNED_OUT') {
+        setLoading(true);
+      }
+
       // Supabase recommends avoiding awaited Supabase calls directly inside
       // onAuthStateChange. Defer profile loading to prevent auth-lock races.
       setTimeout(() => {
@@ -150,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [applySession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -162,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user?.id) await loadProfile(user.id);
       },
     }),
-    [user, session, profile, loading]
+    [user, session, profile, loading, loadProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
