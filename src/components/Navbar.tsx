@@ -20,6 +20,17 @@ import { Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck, La
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
+const FacebookIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
 export function Navbar() {
   const { user, profile, loading } = useAuth();
 
@@ -143,17 +154,17 @@ export function Navbar() {
                       <div className="flex items-center justify-between p-4 border-b">
                         <span className="font-bold text-lg">আমার প্রোফাইল</span>
                       </div>
-                      <div className="flex flex-col p-4 gap-2">
-                        <div className="flex items-center gap-3 mb-2 p-2">
+                      <div className="flex flex-col p-4 gap-2 flex-1 overflow-y-auto">
+                        <Link href={`/profile/${profile?.username}`} className="flex items-center gap-3 mb-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                           <Avatar className="h-12 w-12">
                             <AvatarImage src={profile?.avatar_url || ''} />
                             <AvatarFallback>{profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className="flex flex-col">
+                          <div className="flex flex-col text-gray-900">
                             <span className="font-medium">{profile?.username}</span>
                             <span className="text-xs text-muted-foreground">{profile?.badge}</span>
                           </div>
-                        </div>
+                        </Link>
                         <hr className="my-2" />
                         <Link href="/dashboard" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold text-orange-600">
                           <LayoutDashboard className="h-4 w-4" /> ড্যাশবোর্ড
@@ -176,9 +187,16 @@ export function Navbar() {
                           </Link>
                         )}
                         <hr className="my-2" />
-                        <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-red-600 font-medium">
+                        <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-red-600 font-medium w-full text-left">
                           <LogOut className="h-4 w-4" /> লগ আউট
                         </button>
+                      </div>
+                      
+                      {/* Fixed Footer for Facebook Link */}
+                      <div className="p-4 border-t mt-auto">
+                        <a href="https://www.facebook.com/groups/amarmondirofficial" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#1877F2]/10 text-[#1877F2] p-3 rounded-xl font-bold hover:bg-[#1877F2]/20 transition-colors">
+                          <FacebookIcon className="h-5 w-5" /> ফেসবুক গ্রুপে যুক্ত হোন
+                        </a>
                       </div>
                     </div>
                   </SheetContent>
@@ -204,7 +222,7 @@ export function Navbar() {
                       <div className="flex items-center justify-between p-4 border-b">
                          <span className="font-bold text-lg">মেনু</span>
                       </div>
-                      <div className="flex flex-col p-4 gap-2">
+                      <div className="flex flex-col p-4 gap-2 flex-1 overflow-y-auto">
                         <Link href="/directory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
                           মন্দির খুঁজুন
                         </Link>
@@ -215,9 +233,15 @@ export function Navbar() {
                         <Link href="/login" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold">
                           লগ ইন
                         </Link>
-                        <Link href="/signup" className="flex items-center gap-2 p-2 rounded-lg bg-orange-500 text-white font-bold">
+                        <Link href="/signup" className="flex items-center gap-2 p-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors">
                           রেজিস্ট্রেশন
                         </Link>
+                      </div>
+                      
+                      <div className="p-4 border-t mt-auto">
+                        <a href="https://www.facebook.com/groups/amarmondirofficial" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#1877F2]/10 text-[#1877F2] p-3 rounded-xl font-bold hover:bg-[#1877F2]/20 transition-colors">
+                          <FacebookIcon className="h-5 w-5" /> ফেসবুক গ্রুপে যুক্ত হোন
+                        </a>
                       </div>
                     </div>
                   </SheetContent>
