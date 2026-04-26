@@ -23,7 +23,17 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: 'GPTBot',
-        disallow: ['/'],
+        allow: '/',
+        disallow: [
+          '/admin/',
+          '/dashboard/',
+          '/settings/',
+          '/login',
+          '/signup',
+          '/forgot-password',
+          '/reset-password',
+          '/api/',
+        ],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
