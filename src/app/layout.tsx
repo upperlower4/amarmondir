@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/hooks/useAuth';
 
 export const metadata: Metadata = {
   title: {
@@ -45,7 +46,7 @@ export default function RootLayout({
             __html: `window.ENV = { NEXT_PUBLIC_SUPABASE_URL: ${JSON.stringify(envUrl)}, NEXT_PUBLIC_SUPABASE_ANON_KEY: ${JSON.stringify(envAnonKey)} };`,
           }}
         />
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
