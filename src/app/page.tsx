@@ -223,7 +223,7 @@ export default async function HomePage() {
                   মন্দির যোগ করুন
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 gap-2">
+              <Button asChild size="lg" variant="outline" className="bg-transparent border-white/50 text-white hover:bg-white/10 hover:text-white gap-2">
                 <Link href="/leaderboard">
                   <Users className="h-5 w-5" />
                   অবদানকারী তালিকা

@@ -216,7 +216,7 @@ export default async function TemplePage({ params, searchParams }: Props) {
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 66vw"
-                  className="object-cover"
+                  className="object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
