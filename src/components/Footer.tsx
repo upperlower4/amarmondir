@@ -36,7 +36,7 @@ export function Footer() {
           <div className="flex-1">
             <h3 className="font-bold mb-4">আমাদের পার্টনার</h3>
             <ul className="space-y-2 text-sm text-gray-600 bengali-text">
-              <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600"><img src="" alt="sponsor 1"></img></Link></li>
+              <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600"><img src="https://res.cloudinary.com/dhavfhslp/image/upload/v1777261337/sonatoni_bonduder_addakana_iomibp.jpg" alt="sonatoni bonduder addakana"></img></Link></li>
               <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600"><img src="" alt="sponsor 1"></img></Link></li>
               <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600"><img src="" alt="sponsor 1"></img></Link></li>
             </ul>
