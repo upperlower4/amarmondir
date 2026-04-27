@@ -194,7 +194,7 @@ export function Navbar() {
                       
                       {/* Fixed Footer for Facebook Link */}
                       <div className="p-4 border-t mt-auto">
-                        <a href="https://www.facebook.com/groups/amarmondirofficial" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#1877F2]/10 text-[#1877F2] p-3 rounded-xl font-bold hover:bg-[#1877F2]/20 transition-colors">
+                        <a href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#1877F2]/10 text-[#1877F2] p-3 rounded-xl font-bold hover:bg-[#1877F2]/20 transition-colors">
                           <FacebookIcon className="h-5 w-5" /> ফেসবুক গ্রুপে যুক্ত হোন
                         </a>
                       </div>
