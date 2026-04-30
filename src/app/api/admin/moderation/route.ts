@@ -32,20 +32,44 @@ export async function POST(req: Request) {
     if (entity === 'temple') {
       if (action === 'approve' || action === 'reject') {
         const status = action === 'approve' ? 'approved' : 'rejected';
-        const { data: templesData } = await admin.from('temples').select('id, created_by').in('id', targetIds);
+        const { data: templesData } = await admin.from('temples').select('id, slug, created_by').in('id', targetIds);
         
         const { error } = await admin.from('temples').update({ status }).in('id', targetIds);
         if (error) throw error;
 
         for (const t of templesData || []) {
-          if (t.created_by) {
-            if (action === 'approve') {
+          if (action === 'approve') {
+            if (t.created_by) {
               await admin.from('temple_contributors').upsert({
                 temple_id: t.id,
                 profile_id: t.created_by,
                 contribution_type: 'original',
               }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
             }
+            
+            // Ping IndexNow (Bing) when approved
+            if (t.slug) {
+              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.amarmondir.com';
+              const urlToSubmit = `${baseUrl}/temple/${t.slug}`;
+              const indexNowKey = '0357fa7ab2a145be93537558a14ad7fd';
+              const host = baseUrl.replace(/^https?:\/\//, '').split('/')[0];
+              try {
+                await fetch('https://api.indexnow.org/IndexNow', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    host: host,
+                    key: indexNowKey,
+                    keyLocation: `${baseUrl}/${indexNowKey}.txt`,
+                    urlList: [urlToSubmit],
+                  }),
+                });
+              } catch (err) {
+                console.error('Failed to notify IndexNow:', err);
+              }
+            }
+          }
+          if (t.created_by) {
             await syncProfileStats(t.created_by);
           }
         }
@@ -66,7 +90,7 @@ export async function POST(req: Request) {
     }
 
     if (entity === 'edit') {
-      const { data: edits } = await admin.from('temple_edits').select('id, temple_id, profile_id, suggested_data').in('id', targetIds);
+      const { data: edits } = await admin.from('temple_edits').select('id, temple_id, profile_id, suggested_data, temple:temples(slug)').in('id', targetIds);
       if (action === 'approve' || action === 'reject') {
         const mappedStatus = action === 'approve' ? 'approved' : 'rejected';
         for (const edit of edits || []) {
@@ -90,6 +114,29 @@ export async function POST(req: Request) {
                 profile_id: edit.profile_id,
                 contribution_type: 'edit',
               });
+            }
+
+            // Ping IndexNow (Bing) when edit approved
+            const slug = (edit.temple as any)?.slug;
+            if (slug) {
+              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.amarmondir.com';
+              const urlToSubmit = `${baseUrl}/temple/${slug}`;
+              const indexNowKey = '0357fa7ab2a145be93537558a14ad7fd';
+              const host = baseUrl.replace(/^https?:\/\//, '').split('/')[0];
+              try {
+                await fetch('https://api.indexnow.org/IndexNow', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    host: host,
+                    key: indexNowKey,
+                    keyLocation: `${baseUrl}/${indexNowKey}.txt`,
+                    urlList: [urlToSubmit],
+                  }),
+                });
+              } catch (err) {
+                console.error('Failed to notify IndexNow:', err);
+              }
             }
           }
           
