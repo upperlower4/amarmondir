@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/hooks/useAuth';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +42,16 @@ export default function RootLayout({
   return (
     <html lang="bn">
       <body className="min-h-screen flex flex-col">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-PY0XV17W3Y" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-PY0XV17W3Y');
+          `}
+        </Script>
         <script
           dangerouslySetInnerHTML={{
             __html: `window.ENV = { NEXT_PUBLIC_SUPABASE_URL: ${JSON.stringify(envUrl)}, NEXT_PUBLIC_SUPABASE_ANON_KEY: ${JSON.stringify(envAnonKey)} };`,
