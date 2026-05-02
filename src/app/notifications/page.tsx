@@ -27,14 +27,6 @@ export default function NotificationsPage() {
     tokenRef.current = session?.access_token;
   }, [session?.access_token]);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadData(0, filter, true);
-    } else {
-      setLoading(false);
-    }
-  }, [user?.id, filter]);
-
   const loadData = async (pageNum: number, f: string, reset: boolean = false) => {
     try {
       if (reset && notifications.length === 0) setLoading(true);
@@ -53,6 +45,14 @@ export default function NotificationsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.id) {
+      loadData(0, filter, true);
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, filter]);
 
   const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();

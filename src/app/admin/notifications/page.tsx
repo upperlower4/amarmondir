@@ -30,12 +30,6 @@ export default function AdminNotificationsPage() {
   const [notifyOnNewTemple, setNotifyOnNewTemple] = useState(true);
   const [pushRateLimit, setPushRateLimit] = useState(5);
 
-  useEffect(() => {
-    if (profile?.is_admin && session?.access_token) {
-      fetchSettings();
-    }
-  }, [profile, session]);
-
   const fetchSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings', {
@@ -50,6 +44,12 @@ export default function AdminNotificationsPage() {
       console.error(e);
     }
   };
+
+  useEffect(() => {
+    if (profile?.is_admin && session?.access_token) {
+      fetchSettings();
+    }
+  }, [profile, session]);
 
   const saveSettings = async () => {
     setSettingsLoading(true);

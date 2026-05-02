@@ -25,7 +25,7 @@ async function getProfileData(username: string) {
     .eq('profile_id', profile.id);
 
   const approvedTemples = (contributedTemples || [])
-    .filter((c: any) => c.temples && c.temples.status === 'approved' && c.temples.slug != null)
+    .filter((c: any) => c.temples && c.temples.status === 'approved' && c.temples.slug != null && !c.temples.deleted_at)
     .map((c: any) => c.temples);
 
   const leaders = await getLeaderboardProfiles();

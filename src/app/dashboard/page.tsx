@@ -13,7 +13,10 @@ import { Clock, CheckCircle2, XCircle, LayoutDashboard, FileEdit, ImageIcon, Map
 import Link from 'next/link';
 import Image from 'next/image';
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: string, isDeleted: boolean = false) {
+  if (isDeleted) {
+    return <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-200"><XCircle className="w-3 h-3 mr-1" /> ডিলিটেড</Badge>;
+  }
   switch (status) {
     case 'approved':
       return <Badge className="bg-green-100 text-green-700 hover:bg-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> এপ্রুভড</Badge>;
@@ -24,7 +27,10 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getPointsDisplay(status: string, pointValue: number) {
+function getPointsDisplay(status: string, pointValue: number, isDeleted: boolean = false) {
+  if (isDeleted) {
+    return <span className="text-gray-400 font-medium line-through">0 পয়েন্ট</span>;
+  }
   switch (status) {
     case 'approved':
       return <span className="text-green-600 font-bold">+{pointValue} পয়েন্ট</span>;
@@ -66,9 +72,9 @@ export default function DashboardPage() {
       const userId = session.user.id;
       
       const [templesRes, editsRes, photosRes] = await Promise.all([
-        supabase.from('temples').select('id, slug, title, status, created_at, moderation_reason').eq('created_by', userId).order('created_at', { ascending: false }),
-        supabase.from('temple_edits').select('id, temple_id, status, created_at, moderator_note, temples(title, slug)').eq('profile_id', userId).order('created_at', { ascending: false }),
-        supabase.from('temple_photos').select('id, temple_id, status, created_at, photo_type, url, temples(title, slug)').eq('profile_id', userId).order('created_at', { ascending: false })
+        supabase.from('temples').select('id, slug, title, status, created_at, moderation_reason, deleted_at').eq('created_by', userId).order('created_at', { ascending: false }),
+        supabase.from('temple_edits').select('id, temple_id, status, created_at, moderator_note, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false }),
+        supabase.from('temple_photos').select('id, temple_id, status, created_at, photo_type, url, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false })
       ]);
 
       const tItems = templesRes.data || [];
@@ -76,12 +82,12 @@ export default function DashboardPage() {
       const pItems = photosRes.data || [];
 
       // compute summary stats on client side as fallback or wait until stats get loaded
-      const approvedTemples = tItems.filter(t => t.status === 'approved').length;
-      const approvedEdits = eItems.filter(e => e.status === 'approved').length;
-      const approvedPhotos = pItems.filter(p => p.status === 'approved').length;
-      const rejectedCount = tItems.filter(t => t.status === 'rejected').length + 
-                            eItems.filter(e => e.status === 'rejected').length + 
-                            pItems.filter(p => p.status === 'rejected').length;
+      const approvedTemples = tItems.filter(t => t.status === 'approved' && !t.deleted_at).length;
+      const approvedEdits = eItems.filter(e => e.status === 'approved' && (!e.temples || !(e.temples as any).deleted_at)).length;
+      const approvedPhotos = pItems.filter(p => p.status === 'approved' && (!p.temples || !(p.temples as any).deleted_at)).length;
+      const rejectedCount = tItems.filter(t => t.status === 'rejected' && !t.deleted_at).length + 
+                            eItems.filter(e => e.status === 'rejected' && (!e.temples || !(e.temples as any).deleted_at)).length + 
+                            pItems.filter(p => p.status === 'rejected' && (!p.temples || !(p.temples as any).deleted_at)).length;
 
       const score = (approvedTemples * POINTS.TEMPLE_ADD) + 
                     (approvedEdits * POINTS.EDIT_APPROVED) + 
@@ -197,23 +203,26 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {temples.map((temple) => (
+                      {temples.map((temple) => {
+                        const isDeleted = !!temple.deleted_at;
+                        return (
                         <tr key={temple.id} className="hover:bg-gray-50/50">
                           <td className="px-6 py-4 font-medium whitespace-nowrap">
-                            {temple.slug && temple.status === 'approved' ? (
+                            {temple.slug && temple.status === 'approved' && !isDeleted ? (
                               <Link href={`/temple/${temple.slug}`} className="text-blue-600 hover:underline">{temple.title}</Link>
                             ) : (
-                              <span className="text-gray-900">{temple.title}</span>
+                              <span className="text-gray-900">{temple.title} {isDeleted && <span className="text-xs text-red-500 ml-2">(মুছে ফেলা হয়েছে)</span>}</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(temple.created_at).toLocaleDateString('bn-BD')}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(temple.status)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(temple.status, POINTS.TEMPLE_ADD)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(temple.status, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(temple.status, POINTS.TEMPLE_ADD, isDeleted)}</td>
                           <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={temple.moderation_reason || ''}>
                             {temple.moderation_reason || '-'}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -240,19 +249,22 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {edits.map((edit) => (
+                      {edits.map((edit) => {
+                        const isDeleted = !!(edit.temples && (edit.temples as any).deleted_at);
+                        return (
                         <tr key={edit.id} className="hover:bg-gray-50/50">
                           <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                            {edit.temples?.title || 'Unknown Temple'}
+                            {edit.temples?.title || 'Unknown Temple'} {isDeleted && <span className="text-xs text-red-500 ml-2">(মুছে ফেলা হয়েছে)</span>}
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(edit.created_at).toLocaleDateString('bn-BD')}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(edit.status)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(edit.status, POINTS.EDIT_APPROVED)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(edit.status, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(edit.status, POINTS.EDIT_APPROVED, isDeleted)}</td>
                           <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={edit.moderator_note || ''}>
                             {edit.moderator_note || '-'}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -279,7 +291,9 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {photos.map((photo) => (
+                      {photos.map((photo) => {
+                        const isDeleted = !!(photo.temples && (photo.temples as any).deleted_at);
+                        return (
                         <tr key={photo.id} className="hover:bg-gray-50/50">
                           <td className="px-6 py-4">
                             <div className="relative w-16 h-12">
@@ -287,13 +301,14 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                            {photo.temples?.title || 'Unknown Temple'}
+                            {photo.temples?.title || 'Unknown Temple'} {isDeleted && <span className="text-xs text-red-500 ml-2">(মুছে ফেলা হয়েছে)</span>}
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(photo.created_at).toLocaleDateString('bn-BD')}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(photo.status)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(photo.status, POINTS.PHOTO_APPROVED)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(photo.status, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(photo.status, POINTS.PHOTO_APPROVED, isDeleted)}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

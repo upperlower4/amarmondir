@@ -82,17 +82,35 @@ export async function POST(req: Request) {
         if (error) throw error;
       } else if (action === 'soft_delete') {
         const { data: templesToDel } = await admin.from('temples').select('id, created_by').in('id', targetIds);
+        const { data: editsToDel } = await admin.from('temple_edits').select('profile_id').in('temple_id', targetIds);
+        const { data: photosToDel } = await admin.from('temple_photos').select('profile_id').in('temple_id', targetIds);
+        
+        const affectedProfiles = new Set<string>();
+        templesToDel?.forEach(t => t.created_by && affectedProfiles.add(t.created_by));
+        editsToDel?.forEach(e => e.profile_id && affectedProfiles.add(e.profile_id));
+        photosToDel?.forEach(p => p.profile_id && affectedProfiles.add(p.profile_id));
+
         const { error } = await admin.from('temples').update({ deleted_at: new Date().toISOString(), deleted_by: auth.user.id }).in('id', targetIds);
         if (error) throw error;
-        for (const t of templesToDel || []) {
-          if (t.created_by) await syncProfileStats(t.created_by);
+        
+        for (const uid of Array.from(affectedProfiles)) {
+          await syncProfileStats(uid);
         }
       } else if (action === 'restore') {
         const { data: templesToRes } = await admin.from('temples').select('id, created_by').in('id', targetIds);
+        const { data: editsToRes } = await admin.from('temple_edits').select('profile_id').in('temple_id', targetIds);
+        const { data: photosToRes } = await admin.from('temple_photos').select('profile_id').in('temple_id', targetIds);
+
+        const affectedProfiles = new Set<string>();
+        templesToRes?.forEach(t => t.created_by && affectedProfiles.add(t.created_by));
+        editsToRes?.forEach(e => e.profile_id && affectedProfiles.add(e.profile_id));
+        photosToRes?.forEach(p => p.profile_id && affectedProfiles.add(p.profile_id));
+
         const { error } = await admin.from('temples').update({ deleted_at: null, deleted_by: null }).in('id', targetIds);
         if (error) throw error;
-        for (const t of templesToRes || []) {
-          if (t.created_by) await syncProfileStats(t.created_by);
+        
+        for (const uid of Array.from(affectedProfiles)) {
+          await syncProfileStats(uid);
         }
       }
     }

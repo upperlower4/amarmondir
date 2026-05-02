@@ -28,11 +28,11 @@ function scoreFromCounts(summary: Omit<ContributionSummary, 'score'>): number {
 async function fetchContributionSummaryWithClient(client: any, profileId: string): Promise<ContributionSummary> {
   const [approvedTemplesRes, approvedEditsRes, approvedPhotosRes, rejectedTemplesRes, rejectedEditsRes, rejectedPhotosRes] = await Promise.all([
     client.from('temples').select('id', { count: 'exact', head: true }).eq('created_by', profileId).eq('status', 'approved').is('deleted_at', null),
-    client.from('temple_edits').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved'),
-    client.from('temple_photos').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved'),
+    client.from('temple_edits').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved').is('temples.deleted_at', null),
+    client.from('temple_photos').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved').is('temples.deleted_at', null),
     client.from('temples').select('id', { count: 'exact', head: true }).eq('created_by', profileId).eq('status', 'rejected').is('deleted_at', null),
-    client.from('temple_edits').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected'),
-    client.from('temple_photos').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected'),
+    client.from('temple_edits').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected').is('temples.deleted_at', null),
+    client.from('temple_photos').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected').is('temples.deleted_at', null),
   ]);
 
   const summaryWithoutScore = {
@@ -89,8 +89,8 @@ export async function getLeaderboardProfiles() {
   // 2. Fetch all relevant approved/rejected entries in bulk to avoid N+1
   const [temples, edits, photos] = await Promise.all([
     admin.from('temples').select('created_by, status').is('deleted_at', null),
-    admin.from('temple_edits').select('profile_id, status'),
-    admin.from('temple_photos').select('profile_id, status'),
+    admin.from('temple_edits').select('profile_id, status, temples!inner(id)').is('temples.deleted_at', null),
+    admin.from('temple_photos').select('profile_id, status, temples!inner(id)').is('temples.deleted_at', null),
   ]);
 
   const templeData = temples.data || [];
