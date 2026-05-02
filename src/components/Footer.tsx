@@ -28,9 +28,11 @@ export function Footer() {
           <div className="flex-1">
             <h3 className="font-bold mb-4">কমিউনিটি</h3>
             <ul className="space-y-2 text-sm text-gray-600 bengali-text">
-              <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600">ফেসবুক গ্রুপ</Link></li>
-              <li><Link href="#" className="hover:text-orange-600">গাইডলাইন</Link></li>
-              <li><Link href="#" className="hover:text-orange-600">যোগাযোগ</Link></li>
+              <li><Link href="/about" className="hover:text-orange-600">আমাদের সম্পর্কে</Link></li>
+              <li><Link href="/guidelines" className="hover:text-orange-600">গাইডলাইন</Link></li>
+              <li><Link href="/privacy-policy" className="hover:text-orange-600">গোপনীয়তা নীতি</Link></li>
+              <li><Link href="/contact" className="hover:text-orange-600">যোগাযোগ</Link></li>
+              <li><Link href="https://www.facebook.com/groups/sonatoni.bondhuder.addakhana" className="hover:text-orange-600" target="_blank" rel="noopener noreferrer">ফেসবুক গ্রুপ</Link></li>
             </ul>
           </div>
           <div className="flex-1">
