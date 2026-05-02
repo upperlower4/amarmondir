@@ -71,7 +71,7 @@ export default function AdminPage() {
           .eq('status', 'approved'),
         supabase
           .from('temples')
-          .select('id, slug, title, status, created_at, upazila, district, profiles!temples_created_by_fkey(username)')
+          .select('id, slug, title, status, created_at, upazila, district, deleted_at, profiles!temples_created_by_fkey(username)')
           .order('created_at', { ascending: false })
           .limit(100),
         supabase
@@ -146,6 +146,34 @@ export default function AdminPage() {
       }
     } catch (error: any) {
       console.error('[handleModerateTemple] error:', error);
+      toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleTempleAction = async (id: string, action: 'soft_delete' | 'restore') => {
+    setProcessingId(id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('আপনার লগইন সেশন এক্সপায়ার হয়েছে। দয়া করে আবার লগইন করুন।');
+      }
+      
+      const res = await fetch('/api/admin/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ entity: 'temple', action: action, id })
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP error: ${res.status}`);
+
+      toast.success(action === 'soft_delete' ? 'মন্দির মুছে ফেলা হয়েছে' : 'মন্দির রিস্টোর করা হয়েছে');
+      
+      setAllTemples((prev) => prev.map((t) => t.id === id ? { ...t, deleted_at: action === 'soft_delete' ? new Date().toISOString() : null } : t));
+    } catch (error: any) {
+      console.error('[handleTempleAction] error:', error);
       toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
     } finally {
       setProcessingId(null);
@@ -376,10 +404,18 @@ export default function AdminPage() {
                           <td className="px-6 py-4 font-medium text-slate-800">{t.title}</td>
                           <td className="px-6 py-4 text-gray-500">@{t.profiles?.username}</td>
                           <td className="px-6 py-4">
-                            <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'} className={t.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}>{t.status.toUpperCase()}</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={t.status === 'approved' ? 'default' : t.status === 'rejected' ? 'destructive' : 'secondary'} className={t.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}>{t.status.toUpperCase()}</Badge>
+                              {t.deleted_at && <Badge variant="destructive">ডিলিটেড</Badge>}
+                            </div>
                           </td>
                           <td className="px-6 py-4 flex gap-2">
                             <Button variant="ghost" size="sm" asChild className="h-8"><Link href={`/temple/${t.slug}`} target="_blank">দেখুন</Link></Button>
+                            {!t.deleted_at ? (
+                              <Button variant="ghost" size="sm" onClick={() => handleTempleAction(t.id, 'soft_delete')} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50" disabled={processingId === t.id}><Trash2 className="h-4 w-4 mr-1"/> মুছুন</Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => handleTempleAction(t.id, 'restore')} className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50" disabled={processingId === t.id}>রিস্টোর</Button>
+                            )}
                           </td>
                         </tr>
                       ))}

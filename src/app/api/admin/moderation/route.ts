@@ -81,11 +81,19 @@ export async function POST(req: Request) {
         const { error } = await admin.from('temples').update({ is_featured: false }).in('id', targetIds);
         if (error) throw error;
       } else if (action === 'soft_delete') {
+        const { data: templesToDel } = await admin.from('temples').select('id, created_by').in('id', targetIds);
         const { error } = await admin.from('temples').update({ deleted_at: new Date().toISOString(), deleted_by: auth.user.id }).in('id', targetIds);
         if (error) throw error;
+        for (const t of templesToDel || []) {
+          if (t.created_by) await syncProfileStats(t.created_by);
+        }
       } else if (action === 'restore') {
+        const { data: templesToRes } = await admin.from('temples').select('id, created_by').in('id', targetIds);
         const { error } = await admin.from('temples').update({ deleted_at: null, deleted_by: null }).in('id', targetIds);
         if (error) throw error;
+        for (const t of templesToRes || []) {
+          if (t.created_by) await syncProfileStats(t.created_by);
+        }
       }
     }
 

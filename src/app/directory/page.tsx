@@ -64,7 +64,8 @@ async function getTemples(params: Awaited<DirectoryPageProps['searchParams']>) {
       .from('temples')
       .select('*')
       .eq('status', 'approved')
-      .not('slug', 'is', null);
+      .not('slug', 'is', null)
+      .is('deleted_at', null);
 
     const safeQ = sanitizeSearchTerm(params.q);
     if (safeQ) {

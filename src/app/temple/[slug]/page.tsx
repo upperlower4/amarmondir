@@ -47,6 +47,7 @@ export async function generateMetadata({ params }: Props) {
     .select('title, english_name, upazila, district, short_bio, cover_image')
     .in('slug', [slug, decodedSlug])
     .eq('status', 'approved')
+    .is('deleted_at', null)
     .single();
 
   if (!temple) {
@@ -83,6 +84,7 @@ async function getTempleData(slug: string) {
     .select('*')
     .in('slug', [slug, decodedSlug])
     .eq('status', 'approved')
+    .is('deleted_at', null)
     .limit(1)
     .maybeSingle();
 
