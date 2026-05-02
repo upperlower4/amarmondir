@@ -52,6 +52,7 @@ export default function NotificationsPage() {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, filter]);
 
   const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {

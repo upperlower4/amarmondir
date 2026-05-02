@@ -29,12 +29,21 @@ export async function POST(req: Request) {
     const { entity, action, id, ids = [], note } = body;
     const targetIds = ids.length ? ids : [id].filter(Boolean);
 
+    // Fetch settings to know how many points to award/deduct
+    const { data: settings } = await admin.from('app_settings').select('*').single();
+    const pTempleAdd = settings?.points_temple_add ?? 10;
+    const pEditApprove = settings?.points_edit_approved ?? 5;
+    const pPhotoApprove = settings?.points_photo_approved ?? 2;
+    const pPenalty = settings?.points_rejection_penalty ?? 5;
+
     if (entity === 'temple') {
       if (action === 'approve' || action === 'reject') {
         const status = action === 'approve' ? 'approved' : 'rejected';
+        const points_awarded = action === 'approve' ? pTempleAdd : -pPenalty;
+        
         const { data: templesData } = await admin.from('temples').select('id, slug, created_by').in('id', targetIds);
         
-        const { error } = await admin.from('temples').update({ status }).in('id', targetIds);
+        const { error } = await admin.from('temples').update({ status, points_awarded, moderation_reason: note }).in('id', targetIds);
         if (error) throw error;
 
         for (const t of templesData || []) {
@@ -119,6 +128,7 @@ export async function POST(req: Request) {
       const { data: edits } = await admin.from('temple_edits').select('id, temple_id, profile_id, suggested_data, temple:temples(slug)').in('id', targetIds);
       if (action === 'approve' || action === 'reject') {
         const mappedStatus = action === 'approve' ? 'approved' : 'rejected';
+        const points_awarded = action === 'approve' ? pEditApprove : -pPenalty;
         for (const edit of edits || []) {
           if (action === 'approve') {
             const suggested = edit.suggested_data || {};
@@ -170,7 +180,7 @@ export async function POST(req: Request) {
             await syncProfileStats(edit.profile_id);
           }
         }
-        const { error } = await admin.from('temple_edits').update({ status: mappedStatus, moderator_note: note || null }).in('id', targetIds);
+        const { error } = await admin.from('temple_edits').update({ status: mappedStatus, points_awarded, moderator_note: note || null }).in('id', targetIds);
         if (error) throw error;
       }
     }
@@ -184,9 +194,10 @@ export async function POST(req: Request) {
     if (entity === 'photo') {
       if (action === 'approve' || action === 'reject') {
         const status = action === 'approve' ? 'approved' : 'rejected';
+        const points_awarded = action === 'approve' ? pPhotoApprove : -pPenalty;
         const { data: photosData } = await admin.from('temple_photos').select('id, temple_id, profile_id').in('id', targetIds);
         
-        const { error } = await admin.from('temple_photos').update({ status }).in('id', targetIds);
+        const { error } = await admin.from('temple_photos').update({ status, points_awarded }).in('id', targetIds);
         if (error) throw error;
 
         for (const photo of photosData || []) {

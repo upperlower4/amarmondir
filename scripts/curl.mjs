@@ -1,0 +1,2 @@
+import fetch from 'node-fetch';
+fetch('http://127.0.0.1:3000/api/admin/migrate-points').then(res => res.text()).then(console.log).catch(console.error);

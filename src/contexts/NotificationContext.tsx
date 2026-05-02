@@ -59,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (e) {
       console.error('Failed to load notifications', e);
     }
-  }, [user?.id]);
+  }, []);
 
   const markAsRead = async (id: string) => {
     if (!session?.access_token) return;

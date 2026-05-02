@@ -29,23 +29,31 @@ export default function AdminNotificationsPage() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [notifyOnNewTemple, setNotifyOnNewTemple] = useState(true);
   const [pushRateLimit, setPushRateLimit] = useState(5);
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/admin/settings', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
-      });
-      const data = await res.json();
-      if (data.settings) {
-        setNotifyOnNewTemple(data.settings.notify_on_new_temple);
-        setPushRateLimit(data.settings.push_rate_limit);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const [pointsTempleAdd, setPointsTempleAdd] = useState(10);
+  const [pointsEditApproved, setPointsEditApproved] = useState(5);
+  const [pointsPhotoApproved, setPointsPhotoApproved] = useState(2);
+  const [pointsRejectionPenalty, setPointsRejectionPenalty] = useState(5);
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/settings', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        const data = await res.json();
+        if (data.settings) {
+          setNotifyOnNewTemple(data.settings.notify_on_new_temple);
+          setPushRateLimit(data.settings.push_rate_limit);
+          setPointsTempleAdd(data.settings.points_temple_add ?? 10);
+          setPointsEditApproved(data.settings.points_edit_approved ?? 5);
+          setPointsPhotoApproved(data.settings.points_photo_approved ?? 2);
+          setPointsRejectionPenalty(data.settings.points_rejection_penalty ?? 5);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     if (profile?.is_admin && session?.access_token) {
       fetchSettings();
     }
@@ -60,7 +68,14 @@ export default function AdminNotificationsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify({ notify_on_new_temple: notifyOnNewTemple, push_rate_limit: pushRateLimit })
+        body: JSON.stringify({ 
+          notify_on_new_temple: notifyOnNewTemple, 
+          push_rate_limit: pushRateLimit,
+          points_temple_add: pointsTempleAdd,
+          points_edit_approved: pointsEditApproved,
+          points_photo_approved: pointsPhotoApproved,
+          points_rejection_penalty: pointsRejectionPenalty
+        })
       });
       if (!res.ok) throw new Error('Failed to save');
       toast.success('সেটিংস সেভ হয়েছে');
@@ -236,6 +251,51 @@ export default function AdminNotificationsPage() {
                       max={50}
                       className="h-11 bg-white font-mono text-center"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="space-y-1">
+                    <Label className="text-base">পয়েন্ট সেটিংস</Label>
+                    <p className="text-sm text-gray-500">বিভিন্ন অবদানের জন্য ইউজারদের কত পয়েন্ট দেওয়া হবে তা নির্ধারণ করুন। এখানে পরিবর্তন করলে শুধুমাত্র নতুন অবদানের পয়েন্ট পরিবর্তিত হবে, পুরনো অবদানে আগের পয়েন্টই থাকবে।</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">নতুন মন্দির এপ্রুভ (পয়েন্ট)</Label>
+                      <Input 
+                        type="number" 
+                        value={pointsTempleAdd}
+                        onChange={(e) => setPointsTempleAdd(parseInt(e.target.value) || 0)}
+                        className="bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">এডিট সাজেশন এপ্রুভ (পয়েন্ট)</Label>
+                      <Input 
+                        type="number" 
+                        value={pointsEditApproved}
+                        onChange={(e) => setPointsEditApproved(parseInt(e.target.value) || 0)}
+                        className="bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">ফোটো এপ্রুভ (পয়েন্ট)</Label>
+                      <Input 
+                        type="number" 
+                        value={pointsPhotoApproved}
+                        onChange={(e) => setPointsPhotoApproved(parseInt(e.target.value) || 0)}
+                        className="bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">রিজেক্ট পেনাল্টি (পয়েন্ট)</Label>
+                      <Input 
+                        type="number" 
+                        value={pointsRejectionPenalty}
+                        onChange={(e) => setPointsRejectionPenalty(parseInt(e.target.value) || 0)}
+                        className="bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
 

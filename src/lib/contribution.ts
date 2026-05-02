@@ -9,42 +9,32 @@ export type ContributionSummary = {
   score: number;
 };
 
-export const POINTS = {
-  TEMPLE_ADD: 10,
-  EDIT_APPROVED: 5,
-  PHOTO_APPROVED: 2,
-  REJECTION_PENALTY: 5,
-} as const;
-
-function scoreFromCounts(summary: Omit<ContributionSummary, 'score'>): number {
-  return (
-    summary.approvedTempleCount * POINTS.TEMPLE_ADD +
-    summary.approvedEditCount * POINTS.EDIT_APPROVED +
-    summary.approvedPhotoCount * POINTS.PHOTO_APPROVED -
-    summary.rejectedCount * POINTS.REJECTION_PENALTY
-  );
-}
-
 async function fetchContributionSummaryWithClient(client: any, profileId: string): Promise<ContributionSummary> {
-  const [approvedTemplesRes, approvedEditsRes, approvedPhotosRes, rejectedTemplesRes, rejectedEditsRes, rejectedPhotosRes] = await Promise.all([
-    client.from('temples').select('id', { count: 'exact', head: true }).eq('created_by', profileId).eq('status', 'approved').is('deleted_at', null),
-    client.from('temple_edits').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved').is('temples.deleted_at', null),
-    client.from('temple_photos').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'approved').is('temples.deleted_at', null),
-    client.from('temples').select('id', { count: 'exact', head: true }).eq('created_by', profileId).eq('status', 'rejected').is('deleted_at', null),
-    client.from('temple_edits').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected').is('temples.deleted_at', null),
-    client.from('temple_photos').select('id, temples!inner(id)', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'rejected').is('temples.deleted_at', null),
+  const [templesRes, editsRes, photosRes] = await Promise.all([
+    client.from('temples').select('id, status, points_awarded').eq('created_by', profileId).in('status', ['approved', 'rejected']).is('deleted_at', null),
+    client.from('temple_edits').select('id, status, points_awarded, temples!inner(id)').eq('profile_id', profileId).in('status', ['approved', 'rejected']).is('temples.deleted_at', null),
+    client.from('temple_photos').select('id, status, points_awarded, temples!inner(id)').eq('profile_id', profileId).in('status', ['approved', 'rejected']).is('temples.deleted_at', null),
   ]);
 
-  const summaryWithoutScore = {
-    approvedTempleCount: approvedTemplesRes.count || 0,
-    approvedEditCount: approvedEditsRes.count || 0,
-    approvedPhotoCount: approvedPhotosRes.count || 0,
-    rejectedCount: (rejectedTemplesRes.count || 0) + (rejectedEditsRes.count || 0) + (rejectedPhotosRes.count || 0),
-  };
+  const temples = templesRes.data || [];
+  const edits = editsRes.data || [];
+  const photos = photosRes.data || [];
+
+  const approvedTemples = temples.filter((t: any) => t.status === 'approved');
+  const approvedEdits = edits.filter((e: any) => e.status === 'approved');
+  const approvedPhotos = photos.filter((p: any) => p.status === 'approved');
+  const rejectedTemples = temples.filter((t: any) => t.status === 'rejected');
+  const rejectedEdits = edits.filter((e: any) => e.status === 'rejected');
+  const rejectedPhotos = photos.filter((p: any) => p.status === 'rejected');
+
+  const score = [...temples, ...edits, ...photos].reduce((acc, curr) => acc + (curr.points_awarded || 0), 0);
 
   return {
-    ...summaryWithoutScore,
-    score: scoreFromCounts(summaryWithoutScore),
+    approvedTempleCount: approvedTemples.length,
+    approvedEditCount: approvedEdits.length,
+    approvedPhotoCount: approvedPhotos.length,
+    rejectedCount: rejectedTemples.length + rejectedEdits.length + rejectedPhotos.length,
+    score,
   };
 }
 
@@ -88,9 +78,9 @@ export async function getLeaderboardProfiles() {
 
   // 2. Fetch all relevant approved/rejected entries in bulk to avoid N+1
   const [temples, edits, photos] = await Promise.all([
-    admin.from('temples').select('created_by, status').is('deleted_at', null),
-    admin.from('temple_edits').select('profile_id, status, temples!inner(id)').is('temples.deleted_at', null),
-    admin.from('temple_photos').select('profile_id, status, temples!inner(id)').is('temples.deleted_at', null),
+    admin.from('temples').select('created_by, status, points_awarded').is('deleted_at', null).in('status', ['approved', 'rejected']),
+    admin.from('temple_edits').select('profile_id, status, points_awarded, temples!inner(id)').is('temples.deleted_at', null).in('status', ['approved', 'rejected']),
+    admin.from('temple_photos').select('profile_id, status, points_awarded, temples!inner(id)').is('temples.deleted_at', null).in('status', ['approved', 'rejected']),
   ]);
 
   const templeData = temples.data || [];
@@ -99,23 +89,20 @@ export async function getLeaderboardProfiles() {
 
   // 3. Map outcomes to profiles
   const leaderboard = profiles.map(profile => {
-    const userTemples = templeData.filter(t => t.created_by === profile.id);
-    const userEdits = editData.filter(e => e.profile_id === profile.id);
-    const userPhotos = photoData.filter(p => p.profile_id === profile.id);
+    const userTemples = templeData.filter((t: any) => t.created_by === profile.id);
+    const userEdits = editData.filter((e: any) => e.profile_id === profile.id);
+    const userPhotos = photoData.filter((p: any) => p.profile_id === profile.id);
 
-    const approvedTemples = userTemples.filter(t => t.status === 'approved').length;
-    const approvedEdits = userEdits.filter(e => e.status === 'approved').length;
-    const approvedPhotos = userPhotos.filter(p => p.status === 'approved').length;
+    const approvedTemples = userTemples.filter((t: any) => t.status === 'approved').length;
+    const approvedEdits = userEdits.filter((e: any) => e.status === 'approved').length;
+    const approvedPhotos = userPhotos.filter((p: any) => p.status === 'approved').length;
     
-    const rejectedTemples = userTemples.filter(t => t.status === 'rejected').length;
-    const rejectedEdits = userEdits.filter(e => e.status === 'rejected').length;
-    const rejectedPhotos = userPhotos.filter(p => p.status === 'rejected').length;
+    const rejectedTemples = userTemples.filter((t: any) => t.status === 'rejected').length;
+    const rejectedEdits = userEdits.filter((e: any) => e.status === 'rejected').length;
+    const rejectedPhotos = userPhotos.filter((p: any) => p.status === 'rejected').length;
     const rejectedCount = rejectedTemples + rejectedEdits + rejectedPhotos;
 
-    const score = (approvedTemples * POINTS.TEMPLE_ADD) + 
-                  (approvedEdits * POINTS.EDIT_APPROVED) + 
-                  (approvedPhotos * POINTS.PHOTO_APPROVED) - 
-                  (rejectedCount * POINTS.REJECTION_PENALTY);
+    const score = [...userTemples, ...userEdits, ...userPhotos].reduce((acc, curr) => acc + (curr.points_awarded || 0), 0);
 
     return {
       ...profile,

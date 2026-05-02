@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { BackButton } from '@/components/BackButton';
-import { POINTS } from '@/lib/contribution';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,18 +26,17 @@ function getStatusBadge(status: string, isDeleted: boolean = false) {
   }
 }
 
-function getPointsDisplay(status: string, pointValue: number, isDeleted: boolean = false) {
+function getPointsDisplay(status: string, pointsAwarded: number, isDeleted: boolean = false) {
   if (isDeleted) {
     return <span className="text-gray-400 font-medium line-through">0 পয়েন্ট</span>;
   }
-  switch (status) {
-    case 'approved':
-      return <span className="text-green-600 font-bold">+{pointValue} পয়েন্ট</span>;
-    case 'rejected':
-      return <span className="text-red-500 font-bold">-{POINTS.REJECTION_PENALTY} পয়েন্ট</span>;
-    default:
-      return <span className="text-gray-400 font-medium">0 পয়েন্ট</span>;
+  if (status === 'approved') {
+    return <span className="text-green-600 font-bold">+{pointsAwarded || 0} পয়েন্ট</span>;
   }
+  if (status === 'rejected') {
+    return <span className="text-red-500 font-bold">{pointsAwarded || 0} পয়েন্ট</span>;
+  }
+  return <span className="text-gray-400 font-medium">0 পয়েন্ট</span>;
 }
 
 export default function DashboardPage() {
@@ -72,9 +70,9 @@ export default function DashboardPage() {
       const userId = session.user.id;
       
       const [templesRes, editsRes, photosRes] = await Promise.all([
-        supabase.from('temples').select('id, slug, title, status, created_at, moderation_reason, deleted_at').eq('created_by', userId).order('created_at', { ascending: false }),
-        supabase.from('temple_edits').select('id, temple_id, status, created_at, moderator_note, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false }),
-        supabase.from('temple_photos').select('id, temple_id, status, created_at, photo_type, url, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false })
+        supabase.from('temples').select('id, slug, title, status, created_at, moderation_reason, deleted_at, points_awarded').eq('created_by', userId).order('created_at', { ascending: false }),
+        supabase.from('temple_edits').select('id, temple_id, status, created_at, moderator_note, points_awarded, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false }),
+        supabase.from('temple_photos').select('id, temple_id, status, created_at, photo_type, url, points_awarded, temples(title, slug, deleted_at)').eq('profile_id', userId).order('created_at', { ascending: false })
       ]);
 
       const tItems = templesRes.data || [];
@@ -89,10 +87,11 @@ export default function DashboardPage() {
                             eItems.filter(e => e.status === 'rejected' && (!e.temples || !(e.temples as any).deleted_at)).length + 
                             pItems.filter(p => p.status === 'rejected' && (!p.temples || !(p.temples as any).deleted_at)).length;
 
-      const score = (approvedTemples * POINTS.TEMPLE_ADD) + 
-                    (approvedEdits * POINTS.EDIT_APPROVED) + 
-                    (approvedPhotos * POINTS.PHOTO_APPROVED) - 
-                    (rejectedCount * POINTS.REJECTION_PENALTY);
+      const score = [...tItems, ...eItems, ...pItems].reduce((acc, curr) => {
+        const isDeleted = (curr as any).deleted_at || ((curr as any).temples && ((curr as any).temples as any).deleted_at);
+        if (isDeleted) return acc;
+        return acc + (curr.points_awarded || 0);
+      }, 0);
 
       if (active) {
         setTemples(tItems);
@@ -216,7 +215,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(temple.created_at).toLocaleDateString('bn-BD')}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(temple.status, isDeleted)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(temple.status, POINTS.TEMPLE_ADD, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(temple.status, temple.points_awarded, isDeleted)}</td>
                           <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={temple.moderation_reason || ''}>
                             {temple.moderation_reason || '-'}
                           </td>
@@ -258,7 +257,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(edit.created_at).toLocaleDateString('bn-BD')}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(edit.status, isDeleted)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(edit.status, POINTS.EDIT_APPROVED, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(edit.status, edit.points_awarded, isDeleted)}</td>
                           <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title={edit.moderator_note || ''}>
                             {edit.moderator_note || '-'}
                           </td>
@@ -305,7 +304,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{new Date(photo.created_at).toLocaleDateString('bn-BD')}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(photo.status, isDeleted)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(photo.status, POINTS.PHOTO_APPROVED, isDeleted)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getPointsDisplay(photo.status, photo.points_awarded, isDeleted)}</td>
                         </tr>
                         );
                       })}
