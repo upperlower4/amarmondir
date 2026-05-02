@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Trophy, User as UserIcon, LogOut, Menu, Settings, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { NotificationBell } from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +71,7 @@ export function Navbar() {
              <div className="h-10 w-10 sm:w-32 animate-pulse bg-gray-200 rounded-full sm:rounded-md"></div>
           ) : user ? (
             <>
+              <NotificationBell />
               <Button asChild size="sm" className="hidden sm:flex items-center gap-1.5 px-3 bg-orange-500 hover:bg-orange-600 whitespace-nowrap">
                 <Link href="/add-temple" className="flex items-center gap-1.5">
                   <Plus className="h-4 w-4 shrink-0" />

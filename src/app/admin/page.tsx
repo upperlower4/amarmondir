@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, X, Loader2, ShieldCheck, AlertCircle, FilePenLine, Users, Building, Activity, Search, Image as ImageIcon, Flag, Trash2, ArrowRight } from 'lucide-react';
+import { Check, X, Loader2, ShieldCheck, AlertCircle, FilePenLine, Users, Building, Activity, Search, Image as ImageIcon, Flag, Trash2, ArrowRight, BellRing } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { safeJsonStringify } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -214,6 +214,13 @@ export default function AdminPage() {
               </div>
               <h1 className="text-3xl font-bold font-serif text-slate-900">ড্যাশবোর্ড</h1>
               <p className="text-gray-500 bengali-text mt-1">পুরো অ্যাপ্লিকেশনের সার্বিক অবস্থা ও মডারেশন</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button asChild variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
+                <Link href="/admin/notifications">
+                  <BellRing className="h-4 w-4 mr-2" /> গ্লোবাল নোটিফিকেশন
+                </Link>
+              </Button>
             </div>
           </div>
 

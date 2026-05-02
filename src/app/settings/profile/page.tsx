@@ -15,6 +15,7 @@ import { CLOUDINARY_FOLDERS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { Loader2, Save, Upload } from 'lucide-react';
 import { safeJsonStringify, sanitizeUsername } from '@/lib/utils';
+import { PushToggle } from '@/components/PushToggle';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -222,6 +223,16 @@ export default function ProfileSettingsPage() {
                       <Label htmlFor="username">ইউজারনেম</Label>
                       <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="your_username" />
                       <p className="text-xs text-gray-500">a-z, 0-9 এবং underscore ব্যবহার করুন</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4 pb-2 border-y">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <Label className="text-base">পুশ নোটিফিকেশন</Label>
+                        <p className="text-sm text-gray-500">আপনার ডিভাইসে রিয়েল-টাইম নোটিফিকেশন পান। (দিনে সর্বোচ্চ ৫টি)</p>
+                      </div>
+                      <PushToggle />
                     </div>
                   </div>
 

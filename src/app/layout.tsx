@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/hooks/useAuth';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
@@ -57,7 +58,11 @@ export default function RootLayout({
             __html: `window.ENV = { NEXT_PUBLIC_SUPABASE_URL: ${JSON.stringify(envUrl)}, NEXT_PUBLIC_SUPABASE_ANON_KEY: ${JSON.stringify(envAnonKey)} };`,
           }}
         />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
+        </AuthProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
