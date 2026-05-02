@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
 );
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read for authenticated users only" ON public.notifications FOR READ USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read for authenticated users only" ON public.notifications FOR SELECT USING (auth.role() = 'authenticated');
 
 
 -- 3. User Notifications (Linking Table)
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.user_notifications (
 -- Enable RLS and Realtime
 ALTER TABLE public.user_notifications ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable read for users own notifications" ON public.user_notifications FOR READ USING (auth.uid() = user_id);
+CREATE POLICY "Enable read for users own notifications" ON public.user_notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Enable update for users own notifications" ON public.user_notifications FOR UPDATE USING (auth.uid() = user_id);
 
 -- Enable publication explicitly for user_notifications

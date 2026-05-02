@@ -1,17 +1,20 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { bn } from 'date-fns/locale';
+import { Navbar } from '@/components/Navbar';
+import { useRouter } from 'next/navigation';
 
 export default function NotificationsPage() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const router = useRouter();
   
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,19 +22,24 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
+  const tokenRef = useRef(session?.access_token);
   useEffect(() => {
-    if (session?.access_token) {
+    tokenRef.current = session?.access_token;
+  }, [session?.access_token]);
+
+  useEffect(() => {
+    if (user?.id) {
       loadData(0, filter, true);
     } else {
       setLoading(false);
     }
-  }, [session, filter]);
+  }, [user?.id, filter]);
 
   const loadData = async (pageNum: number, f: string, reset: boolean = false) => {
     try {
-      setLoading(true);
+      if (reset && notifications.length === 0) setLoading(true);
       const res = await fetch(`/api/notifications?filter=${f}&page=${pageNum}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        headers: { 'Authorization': `Bearer ${tokenRef.current}` }
       });
       const data = await res.json();
       if (data.notifications) {
@@ -59,13 +67,19 @@ export default function NotificationsPage() {
   };
 
   return (
-    <main className="flex-1 bg-gray-50 py-10 min-h-screen">
-      <div className="container max-w-3xl mx-auto px-4">
+    <div className="flex-1 bg-gray-50 flex flex-col items-center pt-24 px-4 min-h-screen pb-10">
+      <Navbar />
+      <div className="w-full max-w-3xl">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold font-serif flex items-center gap-3">
-            <Bell className="h-8 w-8 text-orange-600" />
-            নোটিফিকেশন
-          </h1>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 shrink-0">
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            <h1 className="text-3xl font-bold font-serif flex items-center gap-3">
+              <Bell className="h-8 w-8 text-orange-600 hidden sm:block" />
+              নোটিফিকেশন
+            </h1>
+          </div>
           {unreadCount > 0 && (
             <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="gap-2">
               <CheckCheck className="h-4 w-4" /> সব পড়া হয়েছে
@@ -124,6 +138,6 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

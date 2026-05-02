@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -28,8 +28,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [unreadCount, setUnreadCount] = useState(0);
   const { user, session } = useAuth();
 
+  const tokenRef = useRef(session?.access_token);
+  useEffect(() => {
+    tokenRef.current = session?.access_token;
+  }, [session?.access_token]);
+
   const loadNotifications = useCallback(async () => {
-    if (!session?.access_token) {
+    if (!tokenRef.current) {
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -37,7 +42,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     try {
       const res = await fetch('/api/notifications?filter=all&page=0', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+        headers: { 'Authorization': `Bearer ${tokenRef.current}` }
       });
       const data = await res.json();
       if (data.notifications) {
@@ -46,7 +51,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         
         // Fetch real unread count
         const unreadRes = await fetch('/api/notifications?filter=unread&page=0', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
+          headers: { 'Authorization': `Bearer ${tokenRef.current}` }
         });
         const unreadData = await unreadRes.json();
         setUnreadCount(unreadData.count || 0);
@@ -54,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (e) {
       console.error('Failed to load notifications', e);
     }
-  }, [session]);
+  }, [user?.id]);
 
   const markAsRead = async (id: string) => {
     if (!session?.access_token) return;

@@ -1,22 +1,75 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/Navbar';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { BellRing, Loader2 } from 'lucide-react';
+import { BellRing, Loader2, Send, History, Settings, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function AdminNotificationsPage() {
   const { profile, session } = useAuth();
+  const router = useRouter();
+
+  // New Notification State
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
   const [target, setTarget] = useState('all');
   const [loading, setLoading] = useState(false);
+
+  // Settings State
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [notifyOnNewTemple, setNotifyOnNewTemple] = useState(true);
+  const [pushRateLimit, setPushRateLimit] = useState(5);
+
+  useEffect(() => {
+    if (profile?.is_admin && session?.access_token) {
+      fetchSettings();
+    }
+  }, [profile, session]);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      const data = await res.json();
+      if (data.settings) {
+        setNotifyOnNewTemple(data.settings.notify_on_new_temple);
+        setPushRateLimit(data.settings.push_rate_limit);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveSettings = async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ notify_on_new_temple: notifyOnNewTemple, push_rate_limit: pushRateLimit })
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      toast.success('সেটিংস সেভ হয়েছে');
+    } catch (e) {
+      toast.error('সেটিংস সেভ করা যায়নি');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   if (!profile?.is_admin) {
     return (
@@ -58,66 +111,147 @@ export default function AdminNotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 px-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 px-4 pb-20">
       <Navbar />
-      <Card className="w-full max-w-2xl shadow-xl shadow-orange-100/50 rounded-3xl border-none">
-        <CardHeader className="text-center space-y-4">
-          <div className="h-16 w-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
-            <BellRing className="h-8 w-8 text-orange-600" />
+      
+      <div className="w-full max-w-4xl mb-6">
+        <Button variant="ghost" onClick={() => router.back()} className="text-gray-600 mb-2">
+          <ArrowLeft className="h-4 w-4 mr-2" /> ফিরে যান
+        </Button>
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
+            <BellRing className="h-6 w-6 text-orange-600" />
           </div>
-          <CardTitle className="text-2xl md:text-3xl">গ্লোবাল নোটিফিকেশন</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label>যাদের কাছে যাবে</Label>
-            <select
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background"
-            >
-              <option value="all">সব ইউজার</option>
-              {/* Could add 'active', etc later */}
-            </select>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold font-serif text-slate-900">নোটিফিকেশন সেন্টার</h1>
+            <p className="text-gray-500">ম্যানুয়াল নোটিফিকেশন পাঠান এবং সেটিংস পরিবর্তন করুন</p>
           </div>
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label>টাইটেল</Label>
-            <Input 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)} 
-              placeholder="নোটিফিকেশনের টাইটেল" 
-            />
-          </div>
+      <div className="w-full max-w-4xl">
+        <Tabs defaultValue="send" className="w-full space-y-6">
+          <TabsList className="bg-white border p-1 rounded-xl">
+            <TabsTrigger value="send" className="rounded-lg data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600"><Send className="h-4 w-4 mr-2" /> ম্যানুয়াল নোটিফিকেশন</TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600"><Settings className="h-4 w-4 mr-2" /> সেটিংস</TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label>মেসেজ</Label>
-            <Textarea 
-              value={body} 
-              onChange={(e) => setBody(e.target.value)} 
-              placeholder="বিস্তারিত মেসেজ..." 
-              className="min-h-32" 
-            />
-          </div>
+          <TabsContent value="send">
+            <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
+              <CardHeader className="bg-white border-b border-gray-50">
+                <CardTitle className="text-xl">নতুন নোটিফিকেশন পাঠান</CardTitle>
+                <CardDescription>সব ইউজার বা নির্দিষ্ট ইউজারদের রিয়েল-টাইম পুশ নোটিফিকেশন পাঠান</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                <div className="space-y-2">
+                  <Label>কাদের কাছে যাবে?</Label>
+                  <select
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value)}
+                    className="w-full h-11 px-3 py-2 rounded-lg border border-gray-200 bg-white shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
+                  >
+                    <option value="all">সব ইউজার (All Registered Users)</option>
+                    {/* Add options based on roles or activity later */}
+                  </select>
+                </div>
 
-          <div className="space-y-2">
-            <Label>লিংক (ঐচ্ছিক)</Label>
-            <Input 
-              value={url} 
-              onChange={(e) => setUrl(e.target.value)} 
-              placeholder="https://... বা /temple/..." 
-            />
-          </div>
+                <div className="space-y-2">
+                  <Label>শিরোনাম (Title)</Label>
+                  <Input 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    placeholder="যেমনঃ নতুন আপডেট এসেছে!" 
+                    className="h-11 rounded-lg"
+                    maxLength={100}
+                  />
+                  <div className="text-xs text-right text-gray-400">{title.length}/100</div>
+                </div>
 
-          <Button 
-            className="w-full bg-orange-500 hover:bg-orange-600 text-lg h-12 mt-4" 
-            onClick={handleSend}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <BellRing className="h-5 w-5 mr-2" />}
-            পাঠান
-          </Button>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label>মেসেজ (Message Body)</Label>
+                  <Textarea 
+                    value={body} 
+                    onChange={(e) => setBody(e.target.value)} 
+                    placeholder="নোটিফিকেশনের বিস্তারিত মেসেজ লিখুন..." 
+                    className="min-h-32 rounded-lg resize-y" 
+                    maxLength={300}
+                  />
+                  <div className="text-xs text-right text-gray-400">{body.length}/300</div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>লিংক (ঐচ্ছিক - ঐ লিংকে নিয়ে যাবে)</Label>
+                  <Input 
+                    value={url} 
+                    onChange={(e) => setUrl(e.target.value)} 
+                    placeholder="যেমনঃ /temples বা https://..." 
+                    className="h-11 rounded-lg text-blue-600 placeholder:text-gray-400"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <Button 
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-lg h-12 rounded-xl shadow-lg shadow-orange-200 transition-all font-medium" 
+                    onClick={handleSend}
+                    disabled={loading || !title.trim() || !body.trim()}
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Send className="h-5 w-5 mr-2" />}
+                    এখনই পাঠান
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
+              <CardHeader className="bg-white border-b border-gray-50">
+                <CardTitle className="text-xl">নোটিফিকেশন সেটিংস</CardTitle>
+                <CardDescription>সিস্টেম অটোমেটিক নোটিফিকেশন এবং লিমিট ম্যানেজ করুন</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="space-y-1">
+                    <Label className="text-base">নতুন মন্দির সাবমিশন</Label>
+                    <p className="text-sm text-gray-500">কেউ নতুন মন্দির যোগ করলে মডারেটরদের নোটিফাই করুন</p>
+                  </div>
+                  <Switch 
+                    checked={notifyOnNewTemple}
+                    onCheckedChange={setNotifyOnNewTemple} 
+                  />
+                </div>
+
+                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="space-y-1">
+                    <Label className="text-base">দৈনিক পুশ লিমিট (Push Rate Limit)</Label>
+                    <p className="text-sm text-gray-500">প্রতিদিন একজন ইউজারকে সর্বোচ্চ কয়টি পুশ নোটিফিকেশন পাঠানো যাবে</p>
+                  </div>
+                  <div className="flex items-center gap-4 max-w-xs">
+                    <Input 
+                      type="number" 
+                      value={pushRateLimit}
+                      onChange={(e) => setPushRateLimit(parseInt(e.target.value) || 0)}
+                      min={1}
+                      max={50}
+                      className="h-11 bg-white font-mono text-center"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <Button onClick={saveSettings} disabled={settingsLoading} className="w-full sm:w-auto h-11 px-8">
+                    {settingsLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    সেটিংস সেভ করুন
+                  </Button>
+                </div>
+
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+        </Tabs>
+      </div>
     </div>
   );
 }
