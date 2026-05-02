@@ -1,22 +1,31 @@
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { supabase, isConfigured } from '@/lib/supabase';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import Link from 'next/link';
-import { BackButton } from '@/components/BackButton';
+import { supabase, isConfigured } from "@/lib/supabase";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import { BackButton } from "@/components/BackButton";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default async function DistrictPage({ params }: { params: Promise<{ district: string }> }) {
+export default async function DistrictPage({
+  params,
+}: {
+  params: Promise<{ district: string }>;
+}) {
   const { district } = await params;
   const decoded = decodeURIComponent(district);
   const temples = isConfigured
-    ? (await supabase.from('temples').select('id, title, slug, division, temple_type, short_bio').eq('district', decoded).eq('status', 'approved').is('deleted_at', null).order('updated_at', { ascending: false })).data
+    ? (
+        await supabase
+          .from("temples")
+          .select("id, title, slug, division, temple_type, short_bio")
+          .eq("district", decoded)
+          .eq("status", "approved")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+      ).data
     : [];
   return (
     <>
-      <Navbar />
       <main className="flex-1 bg-[#fcfaf7] py-6 sm:py-10">
         <div className="container mx-auto px-4">
           <BackButton className="mb-6" />
@@ -26,7 +35,8 @@ export default async function DistrictPage({ params }: { params: Promise<{ distr
               {decoded} জেলার মন্দিরসমূহ
             </h1>
             <p className="text-gray-600">
-              SEO friendly জেলা browse page — users can discover temples by district.
+              SEO friendly জেলা browse page — users can discover temples by
+              district.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -39,7 +49,7 @@ export default async function DistrictPage({ params }: { params: Promise<{ distr
                       {item.division} · {item.temple_type}
                     </p>
                     <p className="text-sm text-gray-600 line-clamp-3">
-                      {item.short_bio || 'বিস্তারিত বর্ণনা পরে যোগ করা হবে।'}
+                      {item.short_bio || "বিস্তারিত বর্ণনা পরে যোগ করা হবে।"}
                     </p>
                   </CardContent>
                 </Card>
@@ -53,7 +63,6 @@ export default async function DistrictPage({ params }: { params: Promise<{ distr
           )}
         </div>
       </main>
-      <Footer />
     </>
   );
 }

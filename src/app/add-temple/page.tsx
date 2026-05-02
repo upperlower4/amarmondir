@@ -1,13 +1,11 @@
-'use client';
+"use client";
 
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { AddTempleWizard } from '@/components/forms/AddTempleWizard';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { AddTempleWizard } from "@/components/forms/AddTempleWizard";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function AddTemplePage() {
   const { user, loading } = useAuth();
@@ -23,7 +21,6 @@ export default function AddTemplePage() {
   if (!user) {
     return (
       <>
-        <Navbar />
         <main className="flex-1 bg-gray-50 flex items-center justify-center p-4">
           <Card className="max-w-md w-full border-none shadow-2xl">
             <CardContent className="pt-12 pb-12 text-center space-y-6">
@@ -32,7 +29,8 @@ export default function AddTemplePage() {
               </div>
               <h1 className="text-2xl font-bold font-serif">প্রবেশ করুন</h1>
               <p className="text-gray-500 bengali-text">
-                মন্দির যোগ করার জন্য আপনাকে লগ ইন করতে হবে। আমাদের কমিউনিটিতে অবদান রাখতে জয়েন করুন।
+                মন্দির যোগ করার জন্য আপনাকে লগ ইন করতে হবে। আমাদের কমিউনিটিতে
+                অবদান রাখতে জয়েন করুন।
               </p>
               <div className="flex gap-3 justify-center">
                 <Button className="bg-orange-500" asChild>
@@ -45,25 +43,27 @@ export default function AddTemplePage() {
             </CardContent>
           </Card>
         </main>
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Navbar />
       <main className="flex-1 bg-[#fcfaf7] py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto mb-10">
-            <h1 className="text-3xl md:text-5xl font-bold font-serif mb-4">নতুন মন্দির যুক্ত করুন</h1>
-            <p className="text-gray-500 bengali-text">সঠিক তথ্য দিয়ে মন্দির ডিরেক্টরি সমৃদ্ধ করতে সহায়তা করুন। আপনার দেওয়া তথ্য আমাদের টিম যাচাই করে এপ্রুভ করবে।</p>
+            <h1 className="text-3xl md:text-5xl font-bold font-serif mb-4">
+              নতুন মন্দির যুক্ত করুন
+            </h1>
+            <p className="text-gray-500 bengali-text">
+              সঠিক তথ্য দিয়ে মন্দির ডিরেক্টরি সমৃদ্ধ করতে সহায়তা করুন। আপনার
+              দেওয়া তথ্য আমাদের টিম যাচাই করে এপ্রুভ করবে।
+            </p>
           </div>
-          
+
           <AddTempleWizard userId={user.id} />
         </div>
       </main>
-      <Footer />
     </>
   );
 }
