@@ -61,14 +61,16 @@ export default function AdminPage() {
           .order('created_at', { ascending: true }),
         supabase
           .from('temples')
-          .select('id', { count: 'exact', head: true }),
+          .select('id', { count: 'exact', head: true })
+          .is('deleted_at', null),
         supabase
           .from('profiles')
           .select('id', { count: 'exact', head: true }),
         supabase
           .from('temples')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'approved'),
+          .eq('status', 'approved')
+          .is('deleted_at', null),
         supabase
           .from('temples')
           .select('id, slug, title, status, created_at, upazila, district, deleted_at, profiles!temples_created_by_fkey(username)')
@@ -171,7 +173,25 @@ export default function AdminPage() {
 
       toast.success(action === 'soft_delete' ? 'মন্দির মুছে ফেলা হয়েছে' : 'মন্দির রিস্টোর করা হয়েছে');
       
-      setAllTemples((prev) => prev.map((t) => t.id === id ? { ...t, deleted_at: action === 'soft_delete' ? new Date().toISOString() : null } : t));
+      setAllTemples((prev) => {
+        const temple = prev.find(t => t.id === id);
+        if (temple) {
+          if (action === 'soft_delete' && !temple.deleted_at) {
+            setStats(s => ({ 
+              ...s, 
+              approvedTemples: temple.status === 'approved' ? Math.max(0, s.approvedTemples - 1) : s.approvedTemples,
+              totalTemples: Math.max(0, s.totalTemples - 1)
+            }));
+          } else if (action === 'restore' && temple.deleted_at) {
+            setStats(s => ({ 
+              ...s, 
+              approvedTemples: temple.status === 'approved' ? s.approvedTemples + 1 : s.approvedTemples,
+              totalTemples: s.totalTemples + 1
+            }));
+          }
+        }
+        return prev.map((t) => t.id === id ? { ...t, deleted_at: action === 'soft_delete' ? new Date().toISOString() : null } : t);
+      });
     } catch (error: any) {
       console.error('[handleTempleAction] error:', error);
       toast.error('অপারেশন ব্যর্থ হয়েছে: ' + (error.message || ''));
