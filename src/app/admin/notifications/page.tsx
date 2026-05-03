@@ -35,6 +35,8 @@ export default function AdminNotificationsPage() {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [target, setTarget] = useState("all");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Settings State
@@ -122,16 +124,25 @@ export default function AdminNotificationsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ title, body, url, target }),
+        body: JSON.stringify({ 
+          title, 
+          body, 
+          url, 
+          target,
+          scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : null,
+          expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast.success("নোটিফিকেশন পাঠানো হয়েছে");
+      toast.success(scheduledFor ? "নোটিফিকেশন শিডিউল করা হয়েছে" : "নোটিফিকেশন পাঠানো হয়েছে");
       setTitle("");
       setBody("");
       setUrl("");
+      setScheduledFor("");
+      setExpiresAt("");
     } catch (e: any) {
       toast.error(e.message || "নোটিফিকেশন পাঠানো যায়নি");
     } finally {
@@ -239,6 +250,32 @@ export default function AdminNotificationsPage() {
                     placeholder="যেমনঃ /temples বা https://..."
                     className="h-11 rounded-lg text-blue-600 placeholder:text-gray-400"
                   />
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>কখন পাঠানো হবে? (Scheduled For)</Label>
+                      <Input
+                        type="datetime-local"
+                        value={scheduledFor}
+                        onChange={(e) => setScheduledFor(e.target.value)}
+                        className="h-11 rounded-lg text-slate-700 bg-white"
+                      />
+                      <p className="text-xs text-gray-500">ফাঁকা রাখলে এখনই পাঠানো হবে</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>মেয়াদ শেষ (Expires At)</Label>
+                      <Input
+                        type="datetime-local"
+                        value={expiresAt}
+                        onChange={(e) => setExpiresAt(e.target.value)}
+                        className="h-11 rounded-lg text-slate-700 bg-white"
+                      />
+                      <p className="text-xs text-gray-500">এই সময়ের পর নোটিফিকেশন অ্যাপে দেখা যাবে না</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">

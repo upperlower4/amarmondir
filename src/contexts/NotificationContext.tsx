@@ -41,6 +41,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     try {
+      // Fire cron async
+      fetch('/api/cron/process-notifications').catch(e => console.error(e));
+
       const res = await fetch('/api/notifications?filter=all&page=0', {
         headers: { 'Authorization': `Bearer ${tokenRef.current}` }
       });

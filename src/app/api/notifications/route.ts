@@ -44,17 +44,47 @@ export async function GET(req: Request) {
     if (error) throw error;
 
     // Format output
-    const formatted = (dbData || []).map((x: any) => ({
-      id: x.id,
-      is_read: x.is_read,
-      created_at: x.created_at,
-      title: x.notifications?.title,
-      body: x.notifications?.body,
-      url: x.notifications?.url,
-      type: x.notifications?.type
-    }));
+    const now = new Date();
+    const formatted = [];
+    const expiredIds = [];
 
-    return NextResponse.json({ notifications: formatted, count, page, hasMore: (page + 1) * pageSize < (count || 0) });
+    for (const item of (dbData || [])) {
+      const x = item as any;
+      let isExpired = false;
+      let cleanUrl = x.notifications?.url;
+      
+      if (cleanUrl?.includes('?expiresAt=')) {
+        try {
+          const parts = cleanUrl.split('?expiresAt=');
+          cleanUrl = parts[0] || '/';
+          const expiresDate = new Date(parts[1]);
+          if (now > expiresDate) {
+            isExpired = true;
+          }
+        } catch (e) {}
+      }
+
+      if (isExpired) {
+        expiredIds.push(x.id);
+      } else {
+        formatted.push({
+          id: x.id,
+          is_read: x.is_read,
+          created_at: x.created_at,
+          title: x.notifications?.title,
+          body: x.notifications?.body,
+          url: cleanUrl,
+          type: x.notifications?.type
+        });
+      }
+    }
+
+    if (expiredIds.length > 0) {
+      // Clean them up async
+      admin.from('user_notifications').delete().in('id', expiredIds).then();
+    }
+
+    return NextResponse.json({ notifications: formatted, count: count ? count - expiredIds.length : 0, page, hasMore: (page + 1) * pageSize < (count || 0) });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -128,6 +128,16 @@ export async function POST(req: Request) {
     });
     if (contributorError) console.error('Contributor insert error', safeJsonStringify(contributorError));
 
+    const { data: settings } = await adminClient.from('app_settings').select('notify_on_new_temple').single();
+    if (settings?.notify_on_new_temple) {
+      const { data: admins } = await adminClient.from('profiles').select('id').eq('is_admin', true);
+      const adminIds = admins?.map(a => a.id) || [];
+      if (adminIds.length > 0) {
+        const { createNotification } = await import('@/lib/push-utils');
+        await createNotification(adminIds, 'নতুন মন্দির আপলোড করা হয়েছে', `"${temple.title}" মন্দিরটি রিভিউয়ের অপেক্ষায় আছে।`, 'system', '/admin');
+      }
+    }
+
     return NextResponse.json({ success: true, temple });
   } catch (err: any) {
     console.error('Temple API Error:', safeJsonStringify(err));

@@ -24,11 +24,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { title, body, url, target } = await req.json();
+    const { title, body, url, target, scheduledFor, expiresAt } = await req.json();
 
-    if (target === 'all') {
-      // Background execution for scaling could be needed but Vercel allows async if awaited
-      await createNotification('all', title, body, 'system', url);
+    if (scheduledFor) {
+      await admin.from('scheduled_notifications').insert({
+        title,
+        body,
+        target_url: url,
+        target_user_id: target !== 'all' ? target : null,
+        schedule_type: 'specific_date',
+        schedule_value: JSON.stringify({ scheduledFor, expiresAt }),
+        created_by: userData.user.id
+      });
+    } else {
+      let finalUrl = url;
+      if (expiresAt) {
+        finalUrl = `${url || ''}?expiresAt=${new Date(expiresAt).toISOString()}`;
+      }
+      if (target === 'all') {
+        // Background execution for scaling could be needed but Vercel allows async if awaited
+        await createNotification('all', title, body, 'system', finalUrl);
+      } else {
+        await createNotification([target], title, body, 'system', finalUrl);
+      }
     }
 
     return NextResponse.json({ success: true });

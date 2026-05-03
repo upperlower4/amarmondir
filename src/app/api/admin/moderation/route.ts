@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { safeJsonStringify } from '@/lib/utils';
 import { syncProfileStats } from '@/lib/contribution';
+import { createNotification } from '@/lib/push-utils';
 
 async function getAdminUser(req: Request) {
   const authHeader = req.headers.get('authorization');
@@ -80,6 +81,13 @@ export async function POST(req: Request) {
           }
           if (t.created_by) {
             await syncProfileStats(t.created_by);
+            
+            const title = action === 'approve' ? 'মন্দির অ্যাপ্রুভ হয়েছে!' : 'মন্দির রিজেক্ট হয়েছে';
+            const body = action === 'approve' 
+              ? `আপনার দেওয়া মন্দিরটি অ্যাপ্রুভ করা হয়েছে।` 
+              : `আপনার দেওয়া মন্দিরটি রিজেক্ট হয়েছে। কারণ: ${note || 'অজানা'}`;
+            
+            await createNotification([t.created_by], title, body, 'system', action === 'approve' ? `/temple/${t.slug}` : undefined);
           }
         }
       }
