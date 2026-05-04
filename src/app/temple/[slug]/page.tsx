@@ -28,6 +28,7 @@ import { EditableField } from "@/components/temple/EditableField";
 import { TempleEditProvider } from "@/components/temple/TempleEditProvider";
 import { ShareButton } from "@/components/temple/ShareButton";
 import { TempleActions } from "@/components/temple/TempleActions";
+import { TemplePhotoGallery } from "@/components/temple/TemplePhotoGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -244,51 +245,11 @@ export default async function TemplePage({ params, searchParams }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-20">
             {/* LEFT COLUMN */}
             <article className="lg:col-span-8 flex flex-col space-y-12">
-              {/* Hero Image */}
-              <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-100 border border-gray-200/60 shadow-sm">
-                <Image
-                  src={
-                    temple.cover_image ||
-                    "https://picsum.photos/seed/temple/1920/1080"
-                  }
-                  alt={temple.title}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                  className="object-contain"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-
-              {/* Photo Gallery */}
-              {(photos?.length ?? 0) > 0 && (
-                <section>
-                  <h2 className="text-2xl font-bold font-serif text-gray-900 flex items-center gap-2 mb-6">
-                    <Sparkles className="h-6 w-6 text-orange-500" /> গ্যালারি
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {photos?.slice(0, 6).map((photo: any, idx: number) => (
-                      <div
-                        key={photo.id}
-                        className={`relative rounded-xl overflow-hidden group border border-gray-200/60 ${
-                          idx === 0
-                            ? "col-span-2 row-span-2 aspect-[4/3] md:aspect-auto"
-                            : "aspect-square"
-                        }`}
-                      >
-                        <Image
-                          src={photo.url}
-                          alt={`${temple.title} photo`}
-                          fill
-                          sizes="(max-width: 768px) 50vw, 33vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+              <TemplePhotoGallery
+                coverImage={temple.cover_image}
+                title={temple.title}
+                photos={photos || []}
+              />
 
               {/* TABS */}
               <section className="bg-white rounded-2xl border border-gray-200/60 p-6 md:p-8 shadow-sm">
