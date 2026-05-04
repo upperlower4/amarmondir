@@ -19,7 +19,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getSupabaseAdmin } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { getDivisionColor } from "@/lib/utils";
 import Link from "next/link";
@@ -44,7 +44,9 @@ export async function generateMetadata({ params, searchParams }: Props) {
   const sParams = await searchParams;
   const isPreview = sParams.preview === "true";
 
-  let query = supabase
+  const client = isPreview ? getSupabaseAdmin() : supabase;
+
+  let query = client
     .from("temples")
     .select("title, english_name, upazila, district, short_bio, cover_image")
     .in("slug", [slug, decodedSlug])
@@ -89,8 +91,9 @@ export async function generateMetadata({ params, searchParams }: Props) {
 
 async function getTempleData(slug: string, isPreview: boolean = false) {
   const decodedSlug = decodeURIComponent(slug);
+  const client = isPreview ? getSupabaseAdmin() : supabase;
 
-  let query = supabase
+  let query = client
     .from("temples")
     .select("*")
     .in("slug", [slug, decodedSlug])
@@ -105,19 +108,19 @@ async function getTempleData(slug: string, isPreview: boolean = false) {
 
   if (error || !temple) return null;
 
-  const { data: photos } = await supabase
+  const { data: photos } = await client
     .from("temple_photos")
     .select("*")
     .eq("temple_id", temple.id)
     .order("created_at", { ascending: false });
 
-  const { data: contributors } = await supabase
+  const { data: contributors } = await client
     .from("temple_contributors")
     .select("*, profiles(username, full_name, avatar_url, badge)")
     .eq("temple_id", temple.id)
     .order("created_at", { ascending: false });
 
-  const { data: festivals } = await supabase
+  const { data: festivals } = await client
     .from("temple_festivals")
     .select("*")
     .eq("temple_id", temple.id)
