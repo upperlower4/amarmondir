@@ -37,17 +37,23 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params, searchParams }: Props) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
+  const sParams = await searchParams;
+  const isPreview = sParams.preview === "true";
 
-  const { data: temple } = await supabase
+  let query = supabase
     .from("temples")
     .select("title, english_name, upazila, district, short_bio, cover_image")
     .in("slug", [slug, decodedSlug])
-    .eq("status", "approved")
-    .is("deleted_at", null)
-    .single();
+    .is("deleted_at", null);
+
+  if (!isPreview) {
+    query = query.eq("status", "approved");
+  }
+
+  const { data: temple } = await query.single();
 
   if (!temple) {
     return {
@@ -80,17 +86,21 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-async function getTempleData(slug: string) {
+async function getTempleData(slug: string, isPreview: boolean = false) {
   const decodedSlug = decodeURIComponent(slug);
 
-  const { data: temple, error } = await supabase
+  let query = supabase
     .from("temples")
     .select("*")
     .in("slug", [slug, decodedSlug])
-    .eq("status", "approved")
     .is("deleted_at", null)
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  if (!isPreview) {
+    query = query.eq("status", "approved");
+  }
+
+  const { data: temple, error } = await query.maybeSingle();
 
   if (error || !temple) return null;
 
@@ -119,8 +129,9 @@ export default async function TemplePage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sParams = await searchParams;
   const isEditMode = sParams.edit === "true";
+  const isPreview = sParams.preview === "true";
 
-  const data = await getTempleData(slug);
+  const data = await getTempleData(slug, isPreview);
 
   if (!data) notFound();
 
@@ -166,6 +177,16 @@ export default async function TemplePage({ params, searchParams }: Props) {
                 বন্ধ করুন
               </Link>
             </Button>
+          </div>
+        )}
+
+        {/* PREVIEW MODE BANNER */}
+        {isPreview && temple.status !== 'approved' && (
+          <div className={`border-b px-4 py-3 sticky top-[60px] z-40 flex items-center justify-between shadow-sm ${temple.status === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <p className={`font-medium text-sm flex items-center gap-2 ${temple.status === 'rejected' ? 'text-red-800' : 'text-yellow-800'}`}>
+              <AlertCircle className="h-4 w-4" /> 
+              {temple.status === 'pending' ? 'এই মন্দিরটি এখনো এপ্রুভ করা হয়নি (প্রিভিউ মোড)' : 'এই মন্দিরটি রিজেক্ট করা হয়েছে (প্রিভিউ মোড)'}
+            </p>
           </div>
         )}
 

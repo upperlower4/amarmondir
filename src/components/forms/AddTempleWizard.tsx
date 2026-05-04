@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DIVISIONS, DISTRICTS, TEMPLE_TYPES, CLOUDINARY_FOLDERS } from '@/lib/constants';
 import { UPAZILAS } from '@/lib/upazilas';
-import { ImagePlus, MapPin, CheckCircle, Info, FileText, Loader2, Sparkles, X, Plus } from 'lucide-react';
+import { ImagePlus, MapPin, CheckCircle, Info, FileText, Loader2, Sparkles, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { generateSlug, safeJsonStringify } from '@/lib/utils';
@@ -26,6 +26,7 @@ const formSchema = z.object({
   district: z.string().min(1, 'জেলা নির্বাচন করুন'),
   upazila: z.string().min(1, 'উপজেলা নির্বাচন করুন'),
   temple_type: z.string().min(1, 'ধরন নির্বাচন করুন'),
+  other_temple_type: z.string().optional(),
   deity: z.string().optional(),
   established_year: z.string().optional(),
   open_hours: z.string().optional(),
@@ -127,6 +128,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
       district: '',
       upazila: '',
       temple_type: '',
+      other_temple_type: '',
       deity: '',
       established_year: '',
       open_hours: '',
@@ -141,6 +143,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
 
   const selectedDivision = form.watch('division');
   const selectedDistrict = form.watch('district');
+  const selectedTempleType = form.watch('temple_type');
 
   useEffect(() => {
     form.setValue('district', '');
@@ -184,8 +187,8 @@ export function AddTempleWizard({ userId }: { userId: string }) {
         setCoverImageFile(validFiles[0]);
         setCoverImage(previewUrls[0]);
       } else if (type === 'gallery' && validFiles.length > 0) {
-        setGalleryImageFiles(prev => [...prev, ...validFiles].slice(0, 8));
-        setGalleryImages(prev => [...prev, ...previewUrls].slice(0, 8));
+        setGalleryImageFiles(prev => [...prev, ...validFiles].slice(0, 20));
+        setGalleryImages(prev => [...prev, ...previewUrls].slice(0, 20));
       }
     } catch (err: any) {
       console.error('Image read error:', err);
@@ -199,6 +202,34 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   const removeGalleryImage = (index: number) => {
     setGalleryImages(prev => prev.filter((_, i) => i !== index));
     setGalleryImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveGalleryImageLeft = (index: number) => {
+    if (index === 0) return;
+    setGalleryImages(prev => {
+      const newImages = [...prev];
+      [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+      return newImages;
+    });
+    setGalleryImageFiles(prev => {
+      const newFiles = [...prev];
+      [newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]];
+      return newFiles;
+    });
+  };
+
+  const moveGalleryImageRight = (index: number) => {
+    if (index === galleryImages.length - 1) return;
+    setGalleryImages(prev => {
+      const newImages = [...prev];
+      [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+      return newImages;
+    });
+    setGalleryImageFiles(prev => {
+      const newFiles = [...prev];
+      [newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]];
+      return newFiles;
+    });
   };
 
 
@@ -303,7 +334,14 @@ export function AddTempleWizard({ userId }: { userId: string }) {
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
     if (step === 1) {
-      fieldsToValidate = ['title', 'english_name', 'division', 'district', 'upazila', 'temple_type'];
+      if (selectedTempleType === 'Others (অন্যান্য)') {
+        fieldsToValidate = ['title', 'english_name', 'division', 'district', 'upazila', 'temple_type', 'other_temple_type'];
+        if (!form.getValues('other_temple_type')) {
+          form.setError('other_temple_type', { type: 'manual', message: 'এই ঘরটি পূরণ করা আবশ্যক' });
+        }
+      } else {
+        fieldsToValidate = ['title', 'english_name', 'division', 'district', 'upazila', 'temple_type'];
+      }
     } else if (step === 2) {
       fieldsToValidate = ['address'];
     }
@@ -338,7 +376,7 @@ export function AddTempleWizard({ userId }: { userId: string }) {
         division: String(values.division || ''),
         district: String(values.district || ''),
         upazila: String(values.upazila || ''),
-        temple_type: String(values.temple_type || ''),
+        temple_type: values.temple_type === 'Others (অন্যান্য)' && values.other_temple_type ? String(values.other_temple_type) : String(values.temple_type || ''),
         deity: values.deity ? String(values.deity) : null,
         established_year: values.established_year ? String(values.established_year) : null,
         open_hours: values.open_hours ? String(values.open_hours) : null,
@@ -589,6 +627,24 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   />
                 </div>
 
+                {selectedTempleType === 'Others (অন্যান্য)' && (
+                  <div className="pt-2">
+                    <FormField
+                      control={form.control}
+                      name="other_temple_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 font-semibold">অন্যান্য ধরন</FormLabel>
+                          <FormControl>
+                            <Input className="h-12 bg-gray-50 border border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-orange-500/20 focus-visible:border-orange-500 transition-all text-base px-4" placeholder="টাইপ করুন..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 <div className="flex justify-end pt-4">
                   <Button type="button" onClick={nextStep} className="bg-orange-500 h-11 md:h-12 px-6 md:px-10 rounded-xl text-base md:text-lg">
                     পরবর্তী ধাপ
@@ -635,20 +691,45 @@ export function AddTempleWizard({ userId }: { userId: string }) {
                   <FormLabel className="text-lg font-bold">গ্যালারি ছবি</FormLabel>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {galleryImages.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-md">
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-md group">
                         <Image src={img} alt={`Gallery ${idx}`} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
+                        
+                        {/* Overlay with reorder actions */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => moveGalleryImageLeft(idx)}
+                            disabled={idx === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => moveGalleryImageRight(idx)}
+                            disabled={idx === galleryImages.length - 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+
                         <Button 
                           type="button" 
                           variant="destructive" 
                           size="icon" 
-                          className="absolute top-1 right-1 rounded-full h-6 w-6"
+                          className="absolute top-1 right-1 rounded-full h-6 w-6 z-10"
                           onClick={() => removeGalleryImage(idx)}
                         >
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
                     ))}
-                    {galleryImages.length < 8 && (
+                    {galleryImages.length < 20 && (
                       <label className="aspect-square bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
                         <Plus className="h-6 w-6 text-gray-400" />
                         <span className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Add More</span>

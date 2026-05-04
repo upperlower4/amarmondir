@@ -12,16 +12,23 @@ export default async function TypePage({
 }) {
   const { type } = await params;
   const decoded = decodeURIComponent(type);
+  
+  let query = supabase
+    .from("temples")
+    .select("id, title, slug, division, district, short_bio")
+    .eq("status", "approved")
+    .is("deleted_at", null);
+
+  if (decoded === 'Others (অন্যান্য)') {
+    const { TEMPLE_TYPES } = await import('@/lib/constants');
+    const standardTypes = TEMPLE_TYPES.filter(t => t !== 'Others (অন্যান্য)');
+    query = query.not("temple_type", "in", `(${standardTypes.map(t => `"${t}"`).join(',')})`);
+  } else {
+    query = query.eq("temple_type", decoded);
+  }
+
   const temples = isConfigured
-    ? (
-        await supabase
-          .from("temples")
-          .select("id, title, slug, division, district, short_bio")
-          .eq("temple_type", decoded)
-          .eq("status", "approved")
-          .is("deleted_at", null)
-          .order("updated_at", { ascending: false })
-      ).data
+    ? (await query.order("updated_at", { ascending: false })).data
     : [];
   return (
     <>

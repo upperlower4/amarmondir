@@ -14,15 +14,19 @@ export const DISTRICTS: Record<string, string[]> = {
 };
 
 export const TEMPLE_TYPES = [
-  'Hindu Temple',
-  'Buddhist Monastery',
-  'Jagannath Temple',
-  'Kali Temple',
-  'Shiva Temple',
-  'Radha Krishna Temple',
-  'Durga Bari',
-  'Ashram',
-  'Other'
+  'Hindu Temple (হিন্দু মন্দির)',
+  'Buddhist Temple (বৌদ্ধ মন্দির)',
+  'Lord Shiva Mondir (শিব মন্দির)',
+  'Durga Bari (দুর্গা বাড়ি)',
+  'Kali Mondir (কালী মন্দির)',
+  'Radha Krishna Mondir (রাধা কৃষ্ণ মন্দির)',
+  'Jagannath Mondir (জগন্নাথ মন্দির)',
+  'Iskcon Mondir (ইসকন মন্দির)',
+  'Satsang Mondir (সৎসঙ্গ মন্দির)',
+  'Lokenath Mondir (লোকনাথ মন্দির)',
+  'Ashram (আশ্রম)',
+  'College/Versity Mondir (কলেজ/ভার্সিটি মন্দির)',
+  'Others (অন্যান্য)'
 ];
 
 export const BADGE_STATS: Record<string, { label: string, min: number }> = {

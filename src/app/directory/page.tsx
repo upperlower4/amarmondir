@@ -93,7 +93,12 @@ async function getTemples(params: Awaited<DirectoryPageProps["searchParams"]>) {
     }
 
     if (params.type) {
-      query = query.eq("temple_type", params.type);
+      if (params.type === 'Others (অন্যান্য)') {
+        const standardTypes = TEMPLE_TYPES.filter(t => t !== 'Others (অন্যান্য)');
+        query = query.not("temple_type", "in", `(${standardTypes.map(t => `"${t}"`).join(',')})`);
+      } else {
+        query = query.eq("temple_type", params.type);
+      }
     }
 
     const { data, error } = await query.order("created_at", {

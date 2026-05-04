@@ -558,7 +558,7 @@ export default function AdminPage() {
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" asChild className="h-9 font-medium">
                               <Link
-                                href={`/temple/${temple.slug}`}
+                                href={`/temple/${temple.slug}?preview=true`}
                                 target="_blank"
                               >
                                 বিস্তারিত
@@ -760,7 +760,7 @@ export default function AdminPage() {
                                 className="h-8 font-medium bg-white"
                               >
                                 <Link
-                                  href={`/temple/${t.slug}`}
+                                  href={`/temple/${t.slug}?preview=true`}
                                   target="_blank"
                                 >
                                   দেখুন
