@@ -20,6 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { user } = await getUser(req);
     const body = await req.json();
     const admin = getSupabaseAdmin();
+    const { data: templeData } = await admin.from('temples').select('title').eq('id', id).single();
     const { data, error } = await admin.from('temple_reports').insert({
       temple_id: id,
       profile_id: user?.id || null,
@@ -29,6 +30,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       status: 'pending',
     }).select().single();
     if (error) throw error;
+    
+    // Send notification to admins
+    const { data: admins } = await admin.from('profiles').select('id').eq('is_admin', true);
+    const adminIds = admins?.map(a => a.id) || [];
+    if (adminIds.length > 0) {
+      const { createNotification } = await import('@/lib/push-utils');
+      const templeTitle = templeData?.title || 'একটি নির্দিষ্ট মন্দির';
+      await createNotification(adminIds, 'নতুন রিপোর্ট জমা পড়েছে', `"${templeTitle}" মন্দিরের জন্য একটি রিপোর্ট এসেছে।`, 'system', '/admin');
+    }
+
     return NextResponse.json({ success: true, report: data });
   } catch (error: any) {
     console.error('Temple report submit error:', safeJsonStringify(error));

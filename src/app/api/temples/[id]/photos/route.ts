@@ -23,6 +23,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const admin = getSupabaseAdmin();
 
+    const { data: templeData } = await admin.from('temples').select('title').eq('id', id).single();
     const { data, error } = await admin.from('temple_photos').insert({
       temple_id: id,
       url: body?.url,
@@ -36,11 +37,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (error) throw error;
 
-    await admin.from('temple_contributors').insert({
+    await admin.from('temple_contributors').upsert({
       temple_id: id,
       profile_id: auth.user.id,
       contribution_type: 'photo',
-    });
+    }, { onConflict: 'temple_id, profile_id, contribution_type' as any });
+
+    // Send notification to admins
+    const { data: admins } = await admin.from('profiles').select('id').eq('is_admin', true);
+    const adminIds = admins?.map(a => a.id) || [];
+    if (adminIds.length > 0) {
+      const { createNotification } = await import('@/lib/push-utils');
+      const templeTitle = templeData?.title || 'একটি নির্দিষ্ট মন্দির';
+      await createNotification(adminIds, 'নতুন ছবি আপলোড করা হয়েছে', `"${templeTitle}" মন্দিরের জন্য একটি নতুন ছবি আপলোড করা হয়েছে।`, 'system', '/admin');
+    }
 
     return NextResponse.json({ success: true, photo: data });
   } catch (error: any) {

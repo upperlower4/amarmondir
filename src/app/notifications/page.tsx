@@ -56,6 +56,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (user?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadData(0, filter, true);
     } else {
       setLoading(false);

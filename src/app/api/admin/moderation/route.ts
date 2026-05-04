@@ -186,6 +186,14 @@ export async function POST(req: Request) {
           
           if (edit.profile_id) {
             await syncProfileStats(edit.profile_id);
+            
+            const slug = (edit.temple as any)?.slug;
+            const title = action === 'approve' ? 'এডিট অ্যাপ্রুভ হয়েছে!' : 'এডিট রিজেক্ট হয়েছে';
+            const body = action === 'approve' 
+              ? `আপনার দেওয়া এডিট রিকোয়েস্টটি অ্যাপ্রুভ করা হয়েছে। ধন্যবাদ!` 
+              : `আপনার দেওয়া এডিট রিকোয়েস্টটি রিজেক্ট হয়েছে। কারণ: ${note || 'অজানা'}`;
+            
+            await createNotification([edit.profile_id], title, body, 'system', action === 'approve' && slug ? `/temple/${slug}` : undefined);
           }
         }
         const { error } = await admin.from('temple_edits').update({ status: mappedStatus, points_awarded, moderator_note: note || null }).in('id', targetIds);
@@ -195,8 +203,26 @@ export async function POST(req: Request) {
 
     if (entity === 'report') {
       const mappedStatus = action === 'resolve' ? 'resolved' : action === 'reject' ? 'rejected' : 'reviewed';
+      const { data: reportsData } = await admin.from('temple_reports').select('id, temple_id, profile_id').in('id', targetIds);
+      
       const { error } = await admin.from('temple_reports').update({ status: mappedStatus, moderator_note: note || null }).in('id', targetIds);
       if (error) throw error;
+
+      for (const report of reportsData || []) {
+        if (report.profile_id) {
+          const { data: templeInfo } = await admin.from('temples').select('slug').eq('id', report.temple_id).single();
+          const slug = templeInfo?.slug;
+          
+          const title = 'রিপোর্ট আপডেট';
+          const body = action === 'resolve' 
+            ? `আপনার রিপোর্টটি সমাধান করা হয়েছে।` 
+            : action === 'reject'
+              ? `আপনার রিপোর্টটি বাতিল করা হয়েছে। কারণ: ${note || 'প্রযোজ্য নয়'}`
+              : `আপনার রিপোর্টটি রিভিউ করা হয়েছে।`;
+          
+          await createNotification([report.profile_id], title, body, 'system', slug ? `/temple/${slug}` : undefined);
+        }
+      }
     }
 
     if (entity === 'photo') {
@@ -218,6 +244,15 @@ export async function POST(req: Request) {
           }
           if (photo.profile_id) {
             await syncProfileStats(photo.profile_id);
+            const { data: templeInfo } = await admin.from('temples').select('slug').eq('id', photo.temple_id).single();
+            const slug = templeInfo?.slug;
+            
+            const title = action === 'approve' ? 'ছবি অ্যাপ্রুভ হয়েছে!' : 'ছবি রিজেক্ট হয়েছে';
+            const body = action === 'approve' 
+              ? `আপনার আপলোড করা ছবিটি অ্যাপ্রুভ করা হয়েছে। ধন্যবাদ!` 
+              : `আপনার আপলোড করা ছবিটি রিজেক্ট হয়েছে। কারণ: ${note || 'উপযুক্ত না'}`;
+            
+            await createNotification([photo.profile_id], title, body, 'system', action === 'approve' && slug ? `/temple/${slug}` : undefined);
           }
         }
       } else if (action === 'set_cover') {

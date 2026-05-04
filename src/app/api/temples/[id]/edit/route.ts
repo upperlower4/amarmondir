@@ -20,6 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const suggestedData = body?.suggestedData || {};
 
     const admin = getSupabaseAdmin();
+    const { data: templeData } = await admin.from('temples').select('title').eq('id', id).single();
     const { data, error } = await admin.from('temple_edits').insert({
       temple_id: id,
       profile_id: user.id,
@@ -28,6 +29,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }).select().single();
 
     if (error) throw error;
+
+    // Send notification to admins
+    const { data: admins } = await admin.from('profiles').select('id').eq('is_admin', true);
+    const adminIds = admins?.map(a => a.id) || [];
+    if (adminIds.length > 0) {
+      const { createNotification } = await import('@/lib/push-utils');
+      const templeTitle = templeData?.title || 'একটি নির্দিষ্ট মন্দির';
+      await createNotification(adminIds, 'নতুন এডিট রিকোয়েস্ট', `"${templeTitle}" মন্দিরের জন্য একটি নতুন এডিট রিকোয়েস্ট এসেছে।`, 'system', '/admin');
+    }
+
     return NextResponse.json({ success: true, edit: data });
   } catch (error: any) {
     console.error('Temple edit submit error:', safeJsonStringify(error));
