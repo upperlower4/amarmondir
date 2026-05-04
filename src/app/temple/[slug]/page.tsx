@@ -29,6 +29,7 @@ import { TempleEditProvider } from "@/components/temple/TempleEditProvider";
 import { ShareButton } from "@/components/temple/ShareButton";
 import { TempleActions } from "@/components/temple/TempleActions";
 import { TemplePhotoGallery } from "@/components/temple/TemplePhotoGallery";
+import { TempleCard } from "@/components/TempleCard";
 
 export const dynamic = "force-dynamic";
 
@@ -122,7 +123,16 @@ async function getTempleData(slug: string, isPreview: boolean = false) {
     .eq("temple_id", temple.id)
     .order("created_at", { ascending: false });
 
-  return { temple, photos, contributors, festivals };
+  const { data: relatedTemples } = await supabase
+    .from("temples")
+    .select("id, slug, title, upazila, district, cover_image, temple_type")
+    .eq("status", "approved")
+    .is("deleted_at", null)
+    .neq("id", temple.id)
+    .eq("district", temple.district)
+    .limit(4);
+
+  return { temple, photos, contributors, festivals, relatedTemples };
 }
 
 export default async function TemplePage({ params, searchParams }: Props) {
@@ -135,7 +145,7 @@ export default async function TemplePage({ params, searchParams }: Props) {
 
   if (!data) notFound();
 
-  const { temple, photos, contributors, festivals } = data;
+  const { temple, photos, contributors, festivals, relatedTemples } = data;
   const safeContributors = (contributors || []).filter(
     (cont: any) => cont?.profiles?.username,
   );
@@ -471,6 +481,33 @@ export default async function TemplePage({ params, searchParams }: Props) {
               )}
             </aside>
           </div>
+          
+          {/* Related Temples */}
+          {relatedTemples && relatedTemples.length > 0 && (
+            <div className="mt-16 mb-20">
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                <h2 className="text-2xl md:text-3xl font-bold font-serif text-gray-900">
+                  {temple.district} এর অন্যান্য মন্দির
+                </h2>
+                <Button variant="ghost" asChild className="hidden sm:flex text-orange-600 hover:text-orange-700 hover:bg-orange-50">
+                  <Link href={`/directory?district=${temple.district}`}>
+                    সব দেখুন <ChevronRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedTemples.map((relatedTemple: any) => (
+                  <TempleCard key={relatedTemple.id} temple={relatedTemple} />
+                ))}
+              </div>
+              <Button variant="outline" asChild className="w-full mt-6 sm:hidden">
+                <Link href={`/directory?district=${temple.district}`}>
+                  সব দেখুন
+                </Link>
+              </Button>
+            </div>
+          )}
+
         </div>
       </main>
     </TempleEditProvider>
