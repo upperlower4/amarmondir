@@ -6,6 +6,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import Script from "next/script";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: {
@@ -78,6 +79,7 @@ export default function RootLayout({
         />
         <AuthProvider>
           <NotificationProvider>
+            <ScrollToTop />
             <Navbar />
             <div className="flex-1 flex flex-col">{children}</div>
             <Footer />
