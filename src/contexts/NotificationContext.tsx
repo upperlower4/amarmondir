@@ -113,6 +113,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           filter: `user_id=eq.${user.id}`,
         },
         async (payload) => {
+          // Play notification sound
+          try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContext) {
+              const ctx = new AudioContext();
+              const playNote = (freq: number, startTime: number, duration: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+              };
+              const now = ctx.currentTime;
+              playNote(783.99, now, 0.3); // G5 
+              playNote(1046.50, now + 0.15, 0.4); // C6
+            }
+          } catch (e) {
+            console.error("Audio playback failed:", e);
+          }
+
           // When new notification comes, reload to get the joined data
           await loadNotifications();
         }
