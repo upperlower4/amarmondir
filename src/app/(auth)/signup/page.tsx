@@ -27,6 +27,8 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -75,17 +77,12 @@ export default function SignupPage() {
         throw error;
       }
 
-      toast.success("রেজিস্ট্রেশন সফল হয়েছে!");
-
-      // If we have a session, we are logged in. If not, we might need confirmation.
-      // But the user wants direct access.
       if (data.session) {
+        toast.success("রেজিস্ট্রেশন সফল হয়েছে!");
         window.location.href = `/profile/${cleanUsername}`;
       } else {
-        // If confirmation is required, we still redirect to profile,
-        // but they might not be "logged in" state until they confirm.
-        // For now, let's try to go to profile.
-        router.push(`/profile/${cleanUsername}`);
+        toast.success("আপনার ইমেইলে একটি ৬-সংখ্যার OTP পাঠানো হয়েছে");
+        setIsOtpSent(true);
       }
     } catch (error: any) {
       let errorMsg = String(error?.message || error);
@@ -96,6 +93,30 @@ export default function SignupPage() {
 
       toast.error("রেজিস্ট্রেশন ব্যর্থ হয়েছে", {
         description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp,
+        type: "signup",
+      });
+
+      if (error) throw error;
+
+      toast.success("অ্যাকাউন্ট ভেরিফিকেশন সফল হয়েছে!");
+      window.location.href = `/profile/${sanitizeUsername(username)}`;
+    } catch (err: any) {
+      toast.error("OTP ভেরিফিকেশন ব্যর্থ হয়েছে", {
+        description: err?.message || String(err),
       });
     } finally {
       setLoading(false);
@@ -125,80 +146,123 @@ export default function SignupPage() {
         <Card className="border-none shadow-2xl shadow-orange-100/50">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
-              অ্যাকাউন্ট খুলুন
+              {isOtpSent ? "OTP ভেরিফাই করুন" : "অ্যাকাউন্ট খুলুন"}
             </CardTitle>
             <CardDescription>
-              আপনার সঠিক তথ্য দিয়ে ফরমটি পূরণ করুন
+              {isOtpSent
+                ? "আপনার ইমেইলে পাঠানো ৬-সংখ্যার কোডটি দিন"
+                : "আপনার সঠিক তথ্য দিয়ে ফরমটি পূরণ করুন"}
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSignup}>
-            <CardContent className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">সম্পূর্ণ নাম</Label>
-                <Input
-                  id="fullName"
-                  placeholder="আপনার নাম"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="username">ইউজারনেম</Label>
-                <Input
-                  id="username"
-                  placeholder="your_username"
-                  required
-                  minLength={3}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  a-z, 0-9 এবং underscore ব্যবহার করুন
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">ইমেইল</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">পাসওয়ার্ড</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button
-                type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                disabled={loading}
-              >
-                {loading ? "প্রসেসিং..." : "রেজিস্ট্রেশন করুন"}
-              </Button>
-              <div className="text-center text-sm text-muted-foreground">
-                ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold text-orange-600 hover:underline"
+          {isOtpSent ? (
+            <form onSubmit={handleVerifyOtp}>
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp">OTP কোড</Label>
+                  <Input
+                    id="otp"
+                    placeholder="123456"
+                    required
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    className="text-center text-2xl tracking-widest"
+                  />
+                  <p className="text-sm text-muted-foreground text-center mt-2">
+                    কোডটি {email} এ পাঠানো হয়েছে। ইনবক্সে না পেলে স্প্যাম
+                    ফোল্ডার চেক করুন।
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button
+                  type="submit"
+                  className="w-full bg-orange-500 hover:bg-orange-600"
+                  disabled={loading || otp.length !== 6}
                 >
-                  লগ ইন করুন
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
+                  {loading ? "প্রসেসিং..." : "ভেরিফাই করুন"}
+                </Button>
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsOtpSent(false)}
+                    className="font-semibold text-orange-600 hover:underline"
+                  >
+                    পিছনে যান এবং আবার চেষ্টা করুন
+                  </button>
+                </div>
+              </CardFooter>
+            </form>
+          ) : (
+            <form onSubmit={handleSignup}>
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">সম্পূর্ণ নাম</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="আপনার নাম"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">ইউজারনেম</Label>
+                  <Input
+                    id="username"
+                    placeholder="your_username"
+                    required
+                    minLength={3}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    a-z, 0-9 এবং underscore ব্যবহার করুন
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">ইমেইল</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">পাসওয়ার্ড</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button
+                  type="submit"
+                  className="w-full bg-orange-500 hover:bg-orange-600"
+                  disabled={loading}
+                >
+                  {loading ? "প্রসেসিং..." : "রেজিস্ট্রেশন করুন"}
+                </Button>
+                <div className="text-center text-sm text-muted-foreground">
+                  ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
+                  <Link
+                    href="/login"
+                    className="font-semibold text-orange-600 hover:underline"
+                  >
+                    লগ ইন করুন
+                  </Link>
+                </div>
+              </CardFooter>
+            </form>
+          )}
         </Card>
       </div>
     </div>
