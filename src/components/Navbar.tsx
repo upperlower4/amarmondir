@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,6 +35,7 @@ const FacebookIcon = ({ className }: { className?: string }) => (
 
 export function Navbar() {
   const { user, profile, loading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -142,7 +144,7 @@ export function Navbar() {
 
               {/* Mobile Profile Drawer */}
               <div className="md:hidden">
-                <Sheet>
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger className={cn(buttonVariants({ variant: 'ghost' }), "relative h-10 w-10 rounded-full p-0 flex items-center justify-center")}>
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={profile?.avatar_url || ''} />
@@ -157,7 +159,7 @@ export function Navbar() {
                         <span className="font-bold text-lg">আমার প্রোফাইল</span>
                       </div>
                       <div className="flex flex-col p-4 gap-2 flex-1 overflow-y-auto">
-                        <Link href={`/profile/${profile?.username}`} className="flex items-center gap-3 mb-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <Link href={`/profile/${profile?.username}`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 mb-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                           <Avatar className="h-12 w-12">
                             <AvatarImage src={profile?.avatar_url || ''} />
                             <AvatarFallback>{profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
@@ -168,28 +170,28 @@ export function Navbar() {
                           </div>
                         </Link>
                         <hr className="my-2" />
-                        <Link href="/dashboard" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold text-orange-600">
+                        <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold text-orange-600">
                           <LayoutDashboard className="h-4 w-4" /> ড্যাশবোর্ড
                         </Link>
-                        <Link href="/add-temple" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
+                        <Link href="/add-temple" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
                           <Plus className="h-4 w-4" /> নতুন মন্দির
                         </Link>
-                        <Link href={`/profile/${profile?.username}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
+                        <Link href={`/profile/${profile?.username}`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
                           <UserIcon className="h-4 w-4" /> প্রোফাইল
                         </Link>
-                        <Link href="/settings/profile" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
+                        <Link href="/settings/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
                           <Settings className="h-4 w-4" /> প্রোফাইল এডিট
                         </Link>
-                        <Link href="/leaderboard" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
+                        <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50">
                           <Trophy className="h-4 w-4" /> র‍্যাঙ্কিং
                         </Link>
                         {profile?.is_admin && (
-                          <Link href="/admin" className="flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 text-blue-700">
+                          <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 text-blue-700">
                             <ShieldCheck className="h-4 w-4" /> অ্যাডমিন প্যানেল
                           </Link>
                         )}
                         <hr className="my-2" />
-                        <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-red-600 font-medium w-full text-left">
+                        <button onClick={() => { setMobileMenuOpen(false); handleLogout(); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-red-600 font-medium w-full text-left">
                           <LogOut className="h-4 w-4" /> লগ আউট
                         </button>
                       </div>
@@ -215,7 +217,7 @@ export function Navbar() {
               </Button>
 
               <div className="md:hidden flex items-center gap-2">
-                <Sheet>
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), "text-gray-600")}>
                     <Menu className="h-6 w-6" />
                   </SheetTrigger>
@@ -225,17 +227,17 @@ export function Navbar() {
                          <span className="font-bold text-lg">মেনু</span>
                       </div>
                       <div className="flex flex-col p-4 gap-2 flex-1 overflow-y-auto">
-                        <Link href="/directory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
+                        <Link href="/directory" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
                           মন্দির খুঁজুন
                         </Link>
-                        <Link href="/leaderboard" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
+                        <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-medium">
                           লিডারবোর্ড
                         </Link>
                         <hr className="my-2" />
-                        <Link href="/login" className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold">
+                        <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 font-bold">
                           লগ ইন
                         </Link>
-                        <Link href="/signup" className="flex items-center gap-2 p-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors">
+                        <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 p-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors">
                           রেজিস্ট্রেশন
                         </Link>
                       </div>
