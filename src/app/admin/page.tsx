@@ -96,7 +96,7 @@ export default function AdminPage() {
           .limit(100),
         supabase
           .from("profiles")
-          .select("id, username, full_name, is_admin, created_at, avatar_url")
+          .select("id, username, full_name, is_admin, created_at, avatar_url, is_suspended, suspension_reason")
           .order("created_at", { ascending: false })
           .limit(100),
       ]);
@@ -313,6 +313,33 @@ export default function AdminPage() {
       toast.error("অপারেশন ব্যর্থ হয়েছে: " + (error.message || ""));
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleModerateUser = async (id: string, is_suspended: boolean) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch("/api/admin/moderation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          entity: "user",
+          action: is_suspended ? "suspend" : "unsuspend",
+          id,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(is_suspended ? "ইউজার সাসপেন্ড করা হয়েছে" : "সাসপেনশন তুলে নেওয়া হয়েছে");
+      setAllUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, is_suspended } : u)),
+      );
+    } catch {
+      toast.error("কিছু সমস্যা হয়েছে");
     }
   };
 
@@ -812,15 +839,28 @@ export default function AdminPage() {
                             @{u.username}
                           </td>
                           <td className="px-6 py-4">
-                            {u.is_admin ? (
-                              <Badge className="bg-purple-50 text-purple-700 border border-purple-200 shadow-none font-medium text-xs hover:bg-purple-100">
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="shadow-none font-medium text-xs border-gray-200 text-gray-600 bg-gray-50">User</Badge>
-                            )}
+                            <div className="flex gap-2">
+                              {u.is_admin ? (
+                                <Badge className="bg-purple-50 text-purple-700 border border-purple-200 shadow-none font-medium text-xs hover:bg-purple-100">
+                                  Admin
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="shadow-none font-medium text-xs border-gray-200 text-gray-600 bg-gray-50">User</Badge>
+                              )}
+                              {u.is_suspended && (
+                                <Badge variant="destructive" className="shadow-none font-medium text-xs">Suspended</Badge>
+                              )}
+                            </div>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                            <Button
+                              variant={u.is_suspended ? "outline" : "destructive"}
+                              size="sm"
+                              className="h-8 font-medium"
+                              onClick={() => handleModerateUser(u.id, !u.is_suspended)}
+                            >
+                              {u.is_suspended ? "আন-সাসপেন্ড" : "সাসপেন্ড"}
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
