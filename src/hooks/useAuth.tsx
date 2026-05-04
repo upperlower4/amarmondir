@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Profile } from '@/lib/types';
+import { toast } from 'sonner';
 
 type AuthContextValue = {
   user: User | null;
@@ -80,6 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error('Profile load error:', error);
+      setProfile(null);
+      return;
+    }
+
+    if (data?.is_suspended) {
+      toast.error("আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে।", {
+        description: data.suspension_reason ? `কারণ: ${data.suspension_reason}` : undefined,
+        duration: 5000,
+      });
+      await supabase.auth.signOut();
       setProfile(null);
       return;
     }

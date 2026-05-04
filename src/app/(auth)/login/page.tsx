@@ -39,13 +39,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
       if (error) {
         throw error;
+      }
+
+      if (authData?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_suspended, suspension_reason')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profile?.is_suspended) {
+          await supabase.auth.signOut();
+          toast.error("আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে।", {
+            description: profile.suspension_reason ? `কারণ: ${profile.suspension_reason}` : undefined,
+          });
+          return;
+        }
       }
 
       toast.success("সফলভাবে লগ ইন করেছেন");
